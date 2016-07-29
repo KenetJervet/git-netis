@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeFamilies      #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module GitNetis.JIRA where
 
@@ -20,7 +21,9 @@ baidu = do
 class JIRAAuth authMethod where
   type AuthOptions authMethod
   type AuthResult authMethod
-  auth :: authMethod
+  auth :: ( JIRAAuthOptions (AuthOptions authMethod)
+          , JIRAAuthResult (AuthResult authMethod)) =>
+          authMethod
        -> (AuthOptions authMethod)
        -> String -- ^URL
        -> IO (AuthResult authMethod)
@@ -36,6 +39,10 @@ data GenericAuthOptions = GenericAuthOptions { gaoUsername :: ByteString
                                              , gaoPassword :: ByteString
                                              }
 
+instance JIRAAuthOptions GenericAuthOptions where
+  username = gaoUsername
+  password = gaoPassword
+
 type ErrorCode = Int
 
 data GenericAuthResult = GenericAuthOK
@@ -43,6 +50,10 @@ data GenericAuthResult = GenericAuthOK
                                           , garErrorMsg  :: ByteString
                                           }
                        deriving (Eq, Show)
+
+instance JIRAAuthResult GenericAuthResult where
+  isOK GenericAuthOK = True
+  isOK _ = False
 
 data BasicAuth = BasicAuth
 
