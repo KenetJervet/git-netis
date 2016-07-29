@@ -18,7 +18,9 @@ library
   exposed-modules:     GitNetis.Git
                      , GitNetis.JIRA
   build-depends:       base >= 4.7 && < 5
+                     , base64-bytestring >= 1.0
                      , bytestring >= 0.10
+                     , http-types >= 0.9
                      , lens >= 4.13
                      , text >= 1.2
                      , wreq >= 0.4

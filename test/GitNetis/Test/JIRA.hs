@@ -3,14 +3,22 @@
 module GitNetis.Test.JIRA where
 
 import           Data.ByteString      as BS
-import           Data.ByteString.Lazy as BSL
-import           GitNetis.JIRA        (baidu)
+import           GitNetis.JIRA
 import           Test.Tasty
 import           Test.Tasty.HUnit
+
+netisJIRAUrl :: String
+netisJIRAUrl = "http://jira.dev.netis.com.cn:8080/rest/api/2"
 
 tests :: TestTree
 tests = testGroup "JIRA tests"
   [ testCase "Wreq to Baidu" $ do
       resp <- baidu
-      ("<html" `BS.isInfixOf` BSL.toStrict resp) @? "Incorrect response"
+      ("<html" `BS.isInfixOf` resp) @? "Incorrect response"
+  , testCase "Basic auth" $ do
+      let authOptions = GenericAuthOptions { gaoUsername = "kenneth.zhao@netis.com.cn"
+                                           , gaoPassword = "K3N1mx1jh2"
+                                           }
+      authResult <- auth BasicAuth authOptions netisJIRAUrl
+      GenericAuthOK @=? authResult
   ]
