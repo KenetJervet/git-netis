@@ -12,10 +12,7 @@ netisJIRAUrl = "http://jira.dev.netis.com.cn:8080/rest/api/2"
 
 tests :: TestTree
 tests = testGroup "JIRA tests"
-  [ testCase "Wreq to Baidu" $ do
-      resp <- baidu
-      ("<html" `BS.isInfixOf` resp) @? "Incorrect response"
-  , testCase "Basic auth" $ do
+  [ testCase "Basic auth" $ do
       let authOptions = GenericAuthOptions { gaoUsername = "kenneth.zhao@netis.com.cn"
                                            , gaoPassword = "K3N1mx1jh2"
                                            }
