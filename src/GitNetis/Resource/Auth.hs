@@ -3,11 +3,11 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-module GitNetis.JIRA.Auth ( AuthOptions (..)
-                          , NoAuth (..)
-                          , BasicAuth (..)
-                          , OAuth2 (..)
-                          ) where
+module GitNetis.Resource.Auth ( AuthOptions (..)
+                              , NoAuth (..)
+                              , BasicAuth (..)
+                              , OAuth2 (..)
+                              ) where
 
 import           Control.Lens
 import           Data.ByteString           as BS

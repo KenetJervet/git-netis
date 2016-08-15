@@ -16,9 +16,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     GitNetis.Git
-                     , GitNetis.JIRA
-                     , GitNetis.JIRA.Auth
-                     , GitNetis.JIRA.Resource
+                     , GitNetis.Resource
+                     , GitNetis.Resource.Auth
+                     , GitNetis.Resource.Bitbucket
+                     , GitNetis.Resource.JIRA
   build-depends:       aeson >= 0.11
                      , base >= 4.7 && < 5
                      , base64-bytestring >= 1.0
@@ -45,8 +46,8 @@ test-suite git-netis-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       GitNetis.Test.JIRA
-                     , GitNetis.Test.JIRA.Auth
+  other-modules:       GitNetis.Test.Resource.JIRA
+                     , GitNetis.Test.Resource.Bitbucket
   build-depends:       base
                      , git-netis
                      , bytestring >= 0.10
