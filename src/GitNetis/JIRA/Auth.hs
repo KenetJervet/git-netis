@@ -4,17 +4,17 @@
 {-# LANGUAGE TypeFamilies      #-}
 
 module GitNetis.JIRA.Auth ( AuthOptions (..)
-                          , NoAuth
-                          , BasicAuth
-                          , OAuth2
+                          , NoAuth (..)
+                          , BasicAuth (..)
+                          , OAuth2 (..)
                           ) where
 
 import           Control.Lens
 import           Data.ByteString           as BS
 import           Data.ByteString.Base64
 import qualified Data.ByteString.Lazy      as LBS
-import Data.Text as T
-import GitNetis.Util
+import           Data.Text                 as T
+import           GitNetis.Util
 import           Network.HTTP.Types.Header
 import           Network.HTTP.Types.Status as HTTP
 import           Network.Wreq              as Wreq

@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     GitNetis.Git
+                     , GitNetis.JIRA
                      , GitNetis.JIRA.Auth
                      , GitNetis.JIRA.Resource
   build-depends:       aeson >= 0.11
