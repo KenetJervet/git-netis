@@ -5,7 +5,7 @@ A Netis internal Git utility that integrates JIRA (and possibly confluence in th
 
 ## Synopsis
 
-This tool assumes your git workflow follows the Netis git flow variation. See [https://git.dev.netis.com/projects/RD/repos/netisgitflow](https://git.dev.netis.com/projects/RD/repos/netisgitflow) for details.
+This tool assumes your Git workflow follows the Netis Git flow variation. See [https://git.dev.netis.com/projects/RD/repos/netisgitflow](https://git.dev.netis.com/projects/RD/repos/netisgitflow) for details.
 
 ## Usage
 
