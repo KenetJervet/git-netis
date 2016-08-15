@@ -1,76 +1,58 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE FlexibleContexts #-}
 
-module GitNetis.JIRA.Auth ( JIRAAuth (..)
-                          , JIRAAuthOptions (..)
-                          , JIRAAuthResult (..)
-                          , BasicAuth (..)
+module GitNetis.JIRA.Auth ( AuthOptions (..)
+                          , NoAuth
+                          , BasicAuth
+                          , OAuth2
                           ) where
 
 import           Control.Lens
 import           Data.ByteString           as BS
 import           Data.ByteString.Base64
 import qualified Data.ByteString.Lazy      as LBS
+import Data.Text as T
+import GitNetis.Util
 import           Network.HTTP.Types.Header
 import           Network.HTTP.Types.Status as HTTP
-import           Network.Wreq as Wreq
+import           Network.Wreq              as Wreq
 
-class JIRAAuth authMethod where
-  type AuthOptions authMethod
-  type AuthResult authMethod
-  auth :: ( JIRAAuthOptions (AuthOptions authMethod)
-          , JIRAAuthResult (AuthResult authMethod)) =>
-          authMethod
-       -> (AuthOptions authMethod)
-       -> String -- ^URL
-       -> IO (AuthResult authMethod)
+class AuthOptions a where
+  applyAuth :: a -> Options -> IO Options
 
-class JIRAAuthOptions authOptions where
-  username :: authOptions -> ByteString
-  password :: authOptions -> ByteString
+----------
+-- No auth
+----------
 
-class JIRAAuthResult authResult where
-  isOK :: authResult -> Bool
+data NoAuth = NoAuth
 
-data GenericAuthOptions = GenericAuthOptions { gaoUsername :: ByteString
-                                             , gaoPassword :: ByteString
-                                             }
+instance AuthOptions NoAuth where
+  applyAuth _ = return
 
-instance JIRAAuthOptions GenericAuthOptions where
-  username = gaoUsername
-  password = gaoPassword
+-------------
+-- Basic auth
+-------------
 
-type ErrorCode = Int
+data BasicAuth = BasicAuth { username :: Text, password :: Text }
 
-data GenericAuthResult = GenericAuthOK
-                       | GenericAuthError { garErrorCode :: Int
-                                          , garErrorMsg  :: ByteString
-                                          }
-                       deriving (Eq, Show)
+instance AuthOptions BasicAuth where
+  applyAuth BasicAuth{..} options =
+    return $ options & auth .~
+    (
+      Just $ basicAuth (packText username) (packText password)
+    )
 
-instance JIRAAuthResult GenericAuthResult where
-  isOK GenericAuthOK = True
-  isOK _ = False
+---------
+-- OAuth2
+---------
 
-data BasicAuth = BasicAuth
+data OAuth2 = OAuth2 { token :: Text }
 
-instance JIRAAuth BasicAuth where
-  type AuthOptions BasicAuth = GenericAuthOptions
-  type AuthResult BasicAuth = GenericAuthResult
-  auth BasicAuth GenericAuthOptions{..} url = do
-    let options = defaults
-                  & header hAuthorization .~ [mkAuthBS]
-                  & header "Content-Type" .~ ["application/json"]
-    resp <- getWith options url
-    return $
-      case resp ^. responseStatus of
-        st | st >= ok200 && st < badRequest400 -> GenericAuthOK
-           | otherwise -> GenericAuthError { garErrorCode = HTTP.statusCode st
-                                           , garErrorMsg = HTTP.statusMessage st
-                                           }
-    where
-      mkAuthBS :: ByteString
-      mkAuthBS = "Basic " `BS.append` b64UsernamePassword
-      b64UsernamePassword = encode (gaoUsername `BS.append` ":" `BS.append` gaoPassword)
+instance AuthOptions OAuth2 where
+  applyAuth OAuth2{..} options =
+    return $ options & auth .~
+    (
+      Just $ oauth2Bearer (packText token)
+    )

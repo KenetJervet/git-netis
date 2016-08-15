@@ -16,12 +16,16 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     GitNetis.Git
-                     , GitNetis.JIRA
-  build-depends:       base >= 4.7 && < 5
+                     , GitNetis.JIRA.Auth
+                     , GitNetis.JIRA.Resource
+  build-depends:       aeson >= 0.11
+                     , base >= 4.7 && < 5
                      , base64-bytestring >= 1.0
                      , bytestring >= 0.10
+                     , http-client >= 0.4
                      , http-types >= 0.9
                      , lens >= 4.13
+                     , network-uri >= 2.6
                      , text >= 1.2
                      , wreq >= 0.4
   default-language:    Haskell2010
@@ -40,6 +44,8 @@ test-suite git-netis-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       GitNetis.Test.JIRA
+                     , GitNetis.Test.JIRA.Auth
   build-depends:       base
                      , git-netis
                      , bytestring >= 0.10
