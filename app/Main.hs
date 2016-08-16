@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Data.Text as T
+import           Data.Text           as T
 import           Options.Applicative
 
 data Command = BitbucketCommand BitbucketCommand
@@ -26,10 +26,11 @@ jiraParser = pure JIRAListProjects
 
 exec :: Command -> IO ()
 exec (BitbucketCommand cmd) = execBitbucketCommand cmd
-exec (JIRACommand cmd) = execJIRACommand cmd
+exec (JIRACommand cmd)      = execJIRACommand cmd
 
 execBitbucketCommand :: BitbucketCommand -> IO ()
-execBitbucketCommand = undefined
+execBitbucketCommand BitbucketListProjects = do
+  undefined
 
 
 execJIRACommand :: JIRACommand -> IO ()

@@ -2,7 +2,7 @@ module GitNetis.Resource.Bitbucket where
 
 import GitNetis.Resource
 
-data ProjectList = ProjectList
+data GetProjectList = GetProjectList
 
-instance Resource ProjectList where
+instance Resource GetProjectList where
   uri _ = "projects"

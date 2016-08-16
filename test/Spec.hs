@@ -1,6 +1,8 @@
-import qualified GitNetis.Test.Git as GitTest (tests)
-import qualified GitNetis.Test.Resource.JIRA as JIRATest (tests)
+import           Data.IORef
+import qualified GitNetis.Test.Git                as GitTest (tests)
 import qualified GitNetis.Test.Resource.Bitbucket as BitbucketTest (tests)
+import qualified GitNetis.Test.Resource.JIRA      as JIRATest (tests)
+import           GitNetis.Test.TestConfig
 import           Test.Tasty
 
 tests :: TestTree
@@ -11,4 +13,7 @@ tests = testGroup "All tests"
   ]
 
 main :: IO ()
-main = defaultMain tests
+main = do
+  config <- readConfig "test/TestConfig.json"
+  writeIORef globalConfig config
+  defaultMain tests

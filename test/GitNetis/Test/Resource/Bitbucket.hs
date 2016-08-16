@@ -28,19 +28,19 @@ authOKRequestOptions = let
 tests :: TestTree
 tests = testGroup "Bitbucket tests"
   [ testAuth
-  , testProjectList
+  , testGetProjectList
   ]
 
 testAuth :: TestTree
 testAuth = testGroup "Bitbucket auth tests"
   [ testCase "Incorrect credentials should fail" $ do
-      result <- getValue authFailedRequestOptions ProjectList
+      result <- getValue authFailedRequestOptions GetProjectList
       result @=? Left AuthFailed
   ]
 
-testProjectList :: TestTree
-testProjectList = testGroup "JIRA project list"
+testGetProjectList :: TestTree
+testGetProjectList = testGroup "JIRA project list"
   [ testCase "Test getting all projects" $ do
-      result <- getValue authOKRequestOptions ProjectList
+      result <- getValue authOKRequestOptions GetProjectList
       isRight result @? "isRight"
   ]

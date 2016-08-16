@@ -1,15 +1,17 @@
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module GitNetis.Resource ( RequestOptions (..)
                          , ResourceRequestError (..)
                          , Resource (..)
                          ) where
 
+import Data.Either
 import           Control.Exception    as E
 import           Control.Lens
-import           Data.Aeson
+import qualified           Data.Aeson as J
 import           Data.ByteString.Lazy
 import           Data.Maybe
 import           GitNetis.Resource.Auth
@@ -17,6 +19,11 @@ import qualified Network.HTTP.Client  as N
 import           Network.URI
 import           Network.Wreq
 
+
+type Result = Either
+
+isSuccess :: Result e a -> Bool
+isSuccess = isRight
 
 data RequestOptions where
   RequestOptions :: (AuthOptions ao) =>
@@ -62,12 +69,19 @@ class Resource res where
                | sc == 404 -> return $ Left NotFound
                | otherwise -> return $ Left IDontCare
         handler e = error (show e)
-  getJSON :: (FromJSON json) =>
+  get :: RequestOptions
+      -> res
+      -> IO (Either ResourceRequestError ByteString)
+  get = get_ return
+  getValue :: RequestOptions
+           -> res
+           -> IO (Either ResourceRequestError J.Value)
+  getValue = get_ asValue
+
+
+class (J.FromJSON json, Resource res) => JSONResource json res where
+  getJSON :: (J.FromJSON json) =>
              RequestOptions
           -> res
           -> IO (Either ResourceRequestError json)
   getJSON = get_ asJSON
-  getValue :: RequestOptions
-           -> res
-           -> IO (Either ResourceRequestError Value)
-  getValue = get_ asValue
