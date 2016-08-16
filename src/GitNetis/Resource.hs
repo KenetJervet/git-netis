@@ -1,21 +1,23 @@
-{-# LANGUAGE GADTs             #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module GitNetis.Resource ( RequestOptions (..)
                          , ResourceRequestError (..)
                          , Resource (..)
+                         , JSONResource (..)
                          ) where
 
-import Data.Either
-import           Control.Exception    as E
+import           Control.Exception      as E
 import           Control.Lens
-import qualified           Data.Aeson as J
+import qualified Data.Aeson             as J
 import           Data.ByteString.Lazy
+import           Data.Either
 import           Data.Maybe
 import           GitNetis.Resource.Auth
-import qualified Network.HTTP.Client  as N
+import qualified Network.HTTP.Client    as N
 import           Network.URI
 import           Network.Wreq
 
@@ -79,7 +81,7 @@ class Resource res where
   getValue = get_ asValue
 
 
-class (J.FromJSON json, Resource res) => JSONResource json res where
+class (J.FromJSON json, Resource res) => JSONResource json res | res -> json where
   getJSON :: (J.FromJSON json) =>
              RequestOptions
           -> res

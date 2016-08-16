@@ -41,6 +41,6 @@ testAuth = testGroup "Bitbucket auth tests"
 testGetProjectList :: TestTree
 testGetProjectList = testGroup "JIRA project list"
   [ testCase "Test getting all projects" $ do
-      result <- getValue authOKRequestOptions GetProjectList
+      result <- getJSON authOKRequestOptions GetProjectList
       isRight result @? "isRight"
   ]
