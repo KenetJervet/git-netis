@@ -1,7 +1,7 @@
 Git Netis
 ===
 
-A Netis internal Git utility that integrates JIRA (and possibly confluence in the future)
+A Netis internal Git utility that integrates with JIRA and Bitbucket
 
 ## Synopsis
 
