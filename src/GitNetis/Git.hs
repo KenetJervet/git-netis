@@ -22,9 +22,9 @@ data Error = IDontCare
 
 data GitEnv = GitEnv
 
-type Result a = Either Error a
+type Result = Either
 
-isSuccess :: Result a -> Bool
+isSuccess :: Result e a -> Bool
 isSuccess = isRight
 
 class Command cmd where
@@ -32,7 +32,7 @@ class Command cmd where
   type SuccessType cmd = ()
   type ErrorType cmd :: *
   type ErrorType cmd = Error
-  run :: GitEnv -> cmd -> IO (Result (SuccessType cmd))
+  run :: GitEnv -> cmd -> IO (Result (ErrorType cmd) (SuccessType cmd))
 
 
 data GetConfigItem = GetConfigItem String

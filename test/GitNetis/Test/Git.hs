@@ -10,15 +10,20 @@ tests = testGroup "Git tests"
   [ testConfigCommands
   ]
 
+createDummyLine :: IO (Result (ErrorType SetConfigItem) (SuccessType SetConfigItem))
+createDummyLine = run GitEnv (SetConfigItem dummyKey dummyVal)
+  where
+    dummyKey = "git-netis.dummy"
+    dummyVal = "dummy"
+
 testConfigCommands :: TestTree
 testConfigCommands = testGroup "Git tests on config commands"
-  [ testCase "Test setting config" $ do
+  [ testCase "Test getting/setting/unset config" $ do
+      createDummyLine
       res <- run GitEnv (SetConfigItem testKey "bar")
       assert $ isSuccess res
-  , testCase "Test getting config" $ do
       (Right output) <- run GitEnv (GetConfigItem testKey)
       "bar" @=? output
-  , testCase "Test unset config" $ do
       run GitEnv (UnsetConfigItem testKey)
       res <- run GitEnv (GetConfigItem testKey)
       assert $ not (isSuccess res)
