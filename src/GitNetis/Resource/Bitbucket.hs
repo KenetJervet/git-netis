@@ -20,17 +20,17 @@ data Project = Project { projectKey         :: String
                        , projectDescription :: String
                        } deriving Show
 
-data ProjectList = ProjectList{ values :: [Project] } deriving Show
+data ProjectList = ProjectList{ projects :: [Project] } deriving Show
 
 instance FromJSON Project where
   parseJSON = withObject "project object" $ \obj -> do
     key <- obj .: "key"
     description <- obj .: "description"
-    return Project{ projectKey = key,projectDescription = description }
+    return Project{ projectKey = key, projectDescription = description }
 
 instance FromJSON ProjectList where
   parseJSON = withObject "Bitbucket Rest API returned object" $ \obj -> do
     values <- obj .: "values"
-    return ProjectList{ values = values }
+    return ProjectList{ projects = values }
 
 instance JSONResource ProjectList GetProjectList

@@ -4,7 +4,8 @@ module Main where
 
 import           Data.Text                   as T
 import           GitNetis.App
-import           GitNetis.Resource.Bitbucket
+import           GitNetis.Resource.Bitbucket as RB
+import GitNetis.Resource.JIRA as RJ
 import           Options.Applicative
 import           Text.Printf
 
@@ -33,16 +34,22 @@ exec (JIRACommand cmd)      = execJIRACommand cmd
 
 execBitbucketCommand :: BitbucketCommand -> IO ()
 execBitbucketCommand BitbucketListProjects = do
-  res <- bitbucketRequest GetProjectList
-  renderWithSeqNum (values res) renderProject
+  res <- bitbucketRequest RB.GetProjectList
+  renderWithSeqNum (RB.projects res) renderProject
   where
-    renderProject :: Project -> String
-    renderProject Project{..} =
+    renderProject :: RB.Project -> String
+    renderProject RB.Project{..} =
       printf "%s\t%s" projectKey projectDescription
 
 
 execJIRACommand :: JIRACommand -> IO ()
-execJIRACommand = undefined
+execJIRACommand JIRAListProjects = do
+  res <- jiraRequest RJ.GetProjectList
+  renderWithSeqNum (RJ.projects res) renderProject
+  where
+    renderProject :: RJ.Project -> String
+    renderProject RJ.Project{..} =
+      printf "%s\t%s" projectKey projectName
 
 main :: IO ()
 main = do
