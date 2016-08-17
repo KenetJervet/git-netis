@@ -47,7 +47,7 @@ requestWithOptions ro uri = do
 
 data ResourceRequestError = AuthFailed
                           | NotFound
-                          | IDontCare
+                          | IDon'tCare
                           deriving (Eq, Show, Exception)
 
 
@@ -70,7 +70,7 @@ class Resource res where
           case s ^. statusCode of
             sc | sc == 401 -> throwM AuthFailed
                | sc == 404 -> throwM NotFound
-               | otherwise -> throwM IDontCare
+               | otherwise -> throwM IDon'tCare
         handler e = error (show e)
   get :: RequestOptions
       -> res
