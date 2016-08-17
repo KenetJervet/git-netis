@@ -48,16 +48,19 @@ data ResourceRequestError = AuthFailed
 
 class Resource res where
   uri :: res  -- ^ The resource
-      -> String -- ^ Relative uri
-  uri_ :: res -> URI
-  uri_ = fromJust . parseRelativeReference . uri
+      -> String  -- ^ Relative uri
+  uri = undefined
+  uriIO :: res  -- ^ The resource
+        -> IO String  -- ^ Relative uri
+  uriIO = return . uri
   get_ :: (Response ByteString -> IO (Response asType))
        -> RequestOptions
        -> res
        -> IO asType
   get_ as ro res = do
     let rootUri = fromJust $ parseURI (resourceRoot ro)
-    r <- as =<< requestWithOptions ro (rootUri { uriPath = uriPath rootUri ++ uri res})
+    relUri <- uriIO res
+    r <- as =<< requestWithOptions ro (rootUri { uriPath = uriPath rootUri ++ relUri})
     return $ r ^. responseBody
     `catch` handler
       where

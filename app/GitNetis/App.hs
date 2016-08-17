@@ -6,10 +6,11 @@
 module GitNetis.App where
 
 import           Control.Monad
+import           Control.Monad.Catch
 import           Data.IORef
-import           Data.Text                   as T
-import           GitNetis.Git
-import           GitNetis.Resource
+import qualified Data.Text                   as T
+import           GitNetis.Git                hiding (Error)
+import           GitNetis.Resource           hiding (Error)
 import qualified GitNetis.Resource.Auth      as A
 import           GitNetis.Resource.Bitbucket as RB
 import           GitNetis.Resource.JIRA      as RJ
@@ -21,6 +22,13 @@ data Env = Env { username      :: String
                , jiraRoot      :: String
                , bitbucketRoot :: String
                }
+
+data Error = InvalidBitbucketProject String
+           | InvalidJIRAProject String
+           | InvalidJIRAIssue String
+           deriving Show
+
+instance Exception Error
 
 {-# NOINLINE globalEnv #-}
 globalEnv :: IORef Env
@@ -64,3 +72,45 @@ renderWithSeqNum objs showFunc = do
     render :: a -> Int -> IO ()
     render obj seqNum =
       printf "[%d]\t%s\n" seqNum (showFunc obj)
+
+ensureBitbucketProjectExists :: String  -- ^ project key
+                             -> IO ()
+ensureBitbucketProjectExists key = do
+  res <- bitbucketRequest RB.GetProjectList
+  unless (key `elem` (map RB.projectKey (RB.projects res))) $
+    throwM $ InvalidBitbucketProject (printf "Project does not exist: %s" key)
+setActiveBitbucketProject :: String  -- ^ project key
+                          -> IO ()
+setActiveBitbucketProject key = do
+  ensureBitbucketProjectExists key
+  run GitEnv (SetConfigItem "activeBitbucketProject" key)
+
+
+ensureJIRAProjectExists :: String  -- ^ project key
+                        -> IO ()
+ensureJIRAProjectExists key = do
+  res <- jiraRequest RJ.GetProjectList
+  unless (key `elem` (map RJ.projectKey (RJ.projects res))) $
+    throwM $ InvalidJIRAProject (printf "Project does not exist: %s" key)
+
+
+setActiveJIRAProject :: String  -- ^ project key
+                     -> IO ()
+setActiveJIRAProject key = do
+  ensureJIRAProjectExists key
+  run GitEnv (SetConfigItem "activeJIRAProject" key)
+
+
+ensureIssueExists :: String  -- ^ issue key
+                  -> IO ()
+ensureIssueExists key = do
+  void $ jiraRequest RJ.GetIssue{ getIssueKey = key } `catch` handler
+  where
+    handler NotFound = do
+      throwM $ InvalidJIRAIssue (printf "Issue does not exist: %s" key)
+
+workonIssue :: String  -- ^ issue key
+            -> IO ()
+workonIssue key = do
+  ensureIssueExists key
+  putStrLn "Not implemented yet _(:з」∠)_"
