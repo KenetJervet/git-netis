@@ -1,8 +1,9 @@
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module GitNetis.Resource ( RequestOptions (..)
                          , ResourceRequestError (..)
@@ -10,8 +11,8 @@ module GitNetis.Resource ( RequestOptions (..)
                          , JSONResource (..)
                          ) where
 
-import           Control.Exception      as E
 import           Control.Lens
+import           Control.Monad.Catch
 import qualified Data.Aeson             as J
 import           Data.ByteString.Lazy
 import           Data.Either
@@ -47,7 +48,7 @@ requestWithOptions ro uri = do
 data ResourceRequestError = AuthFailed
                           | NotFound
                           | IDontCare
-                          deriving (Eq, Show)
+                          deriving (Eq, Show, Exception)
 
 
 class Resource res where
@@ -58,26 +59,26 @@ class Resource res where
   get_ :: (Response ByteString -> IO (Response asType))
        -> RequestOptions
        -> res
-       -> IO (Either ResourceRequestError asType)
+       -> IO asType
   get_ as ro res = do
     let rootUri = fromJust $ parseURI (resourceRoot ro)
     r <- as =<< requestWithOptions ro (rootUri { uriPath = uriPath rootUri ++ uri res})
-    return $ Right (r ^. responseBody)
+    return $ r ^. responseBody
     `catch` handler
       where
         handler e@(N.StatusCodeException s _ _) =
           case s ^. statusCode of
-            sc | sc == 401 -> return $ Left AuthFailed
-               | sc == 404 -> return $ Left NotFound
-               | otherwise -> return $ Left IDontCare
+            sc | sc == 401 -> throwM AuthFailed
+               | sc == 404 -> throwM NotFound
+               | otherwise -> throwM IDontCare
         handler e = error (show e)
   get :: RequestOptions
       -> res
-      -> IO (Either ResourceRequestError ByteString)
+      -> IO ByteString
   get = get_ return
   getValue :: RequestOptions
            -> res
-           -> IO (Either ResourceRequestError J.Value)
+           -> IO J.Value
   getValue = get_ asValue
 
 
@@ -85,5 +86,5 @@ class (J.FromJSON json, Resource res) => JSONResource json res | res -> json whe
   getJSON :: (J.FromJSON json) =>
              RequestOptions
           -> res
-          -> IO (Either ResourceRequestError json)
+          -> IO json
   getJSON = get_ asJSON

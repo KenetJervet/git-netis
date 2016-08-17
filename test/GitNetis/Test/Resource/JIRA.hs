@@ -2,9 +2,11 @@
 
 module GitNetis.Test.Resource.JIRA where
 
+import           Control.Monad.Catch
 import           Data.ByteString          as BS
 import           Data.Either
 import           Data.IORef
+import           Data.Maybe
 import           Data.Text                as T
 import           GitNetis.Resource
 import           GitNetis.Resource.Auth
@@ -42,13 +44,13 @@ tests = testGroup "JIRA tests"
 testAuth :: TestTree
 testAuth = testGroup "JIRA auth tests"
   [ testCase "Incorrect credentials should fail" $ do
-      result <- getValue authFailedRequestOptions GetProjectList
-      result @=? Left AuthFailed
+      result <- (Just <$> getValue authFailedRequestOptions GetProjectList) `catch` \AuthFailed -> return Nothing
+      assert $ isNothing result
   ]
 
 testGetProjectList :: TestTree
 testGetProjectList = testGroup "JIRA project list"
   [ testCase "Test getting all projects" $ do
       result <- getValue authOKRequestOptions GetProjectList
-      isRight result @? "isRight"
+      return ()
   ]

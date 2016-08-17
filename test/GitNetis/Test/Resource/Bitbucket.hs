@@ -2,7 +2,9 @@
 
 module GitNetis.Test.Resource.Bitbucket where
 
+import           Control.Monad.Catch
 import           Data.Either
+import           Data.Maybe
 import           GitNetis.Resource
 import           GitNetis.Resource.Auth
 import           GitNetis.Resource.Bitbucket
@@ -34,13 +36,13 @@ tests = testGroup "Bitbucket tests"
 testAuth :: TestTree
 testAuth = testGroup "Bitbucket auth tests"
   [ testCase "Incorrect credentials should fail" $ do
-      result <- getValue authFailedRequestOptions GetProjectList
-      result @=? Left AuthFailed
+      result <- (Just <$> getValue authFailedRequestOptions GetProjectList) `catch` \AuthFailed -> return Nothing
+      assert $ isNothing result
   ]
 
 testGetProjectList :: TestTree
 testGetProjectList = testGroup "JIRA project list"
   [ testCase "Test getting all projects" $ do
       result <- getJSON authOKRequestOptions GetProjectList
-      isRight result @? "isRight"
+      return ()
   ]
