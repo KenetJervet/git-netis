@@ -23,11 +23,6 @@ import           Network.URI
 import           Network.Wreq
 
 
-type Result = Either
-
-isSuccess :: Result e a -> Bool
-isSuccess = isRight
-
 data RequestOptions where
   RequestOptions :: (AuthOptions ao) =>
                     { authOptions :: ao

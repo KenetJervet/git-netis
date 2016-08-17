@@ -34,6 +34,8 @@ class Command cmd where
   type DataType cmd = ()
   run :: GitEnv -> cmd -> IO (DataType cmd)
 
+gitConfigPrefix :: String
+gitConfigPrefix = "git-netis."
 
 data GetConfigItem = GetConfigItem String
 data SetConfigItem = SetConfigItem String String
@@ -42,21 +44,21 @@ data UnsetConfigItem = UnsetConfigItem String
 instance Command GetConfigItem where
   type DataType GetConfigItem = String
   run _ (GetConfigItem key) = do
-    (exitCode, stdout, _) <- exec_ ["config", key]
+    (exitCode, stdout, _) <- exec_ ["config", gitConfigPrefix ++ key]
     case exitCode of
       ExitSuccess   -> return $ init stdout  -- Remove trailing \n
       ExitFailure _ -> throwM $ GitConfigError $ printf "Dunno what happened. Maybe key `%s` was not found?" key
 
 instance Command SetConfigItem where
   run _ (SetConfigItem key value) = do
-    (exitCode, _, _) <- exec_ ["config", key, value]
+    (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key, value]
     case exitCode of
       ExitSuccess   -> return ()
       ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."
 
 instance Command UnsetConfigItem where
   run _ (UnsetConfigItem key) = do
-    (exitCode, _, _) <- exec_ ["config", "--unset", key]
+    (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key]
     case exitCode of
       ExitSuccess   -> return ()
       ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."

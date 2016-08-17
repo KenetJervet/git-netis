@@ -35,13 +35,13 @@ instance AuthOptions NoAuth where
 -- Basic auth
 -------------
 
-data BasicAuth = BasicAuth { username :: Text, password :: Text }
+data BasicAuth = BasicAuth { username :: String, password :: String }
 
 instance AuthOptions BasicAuth where
   applyAuth BasicAuth{..} options =
     return $ options & auth .~
     (
-      Just $ basicAuth (packText username) (packText password)
+      Just $ basicAuth (packText $ T.pack username) (packText $ T.pack password)
     )
 
 ---------

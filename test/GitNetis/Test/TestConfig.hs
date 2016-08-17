@@ -16,8 +16,8 @@ import           System.IO.Unsafe
 data TestConfig = TestConfig { mycred :: MyCredConfig
                              } deriving (Show, Generic, FromJSON)
 
-data MyCredConfig = MyCredConfig { username :: Text
-                                 , password :: Text
+data MyCredConfig = MyCredConfig { username :: String
+                                 , password :: String
                                  } deriving (Show, Generic, FromJSON)
 
 readConfig :: FilePath -> IO TestConfig

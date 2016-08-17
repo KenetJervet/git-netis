@@ -2,8 +2,11 @@
 
 module Main where
 
-import           Data.Text           as T
+import           Data.Text                   as T
+import           GitNetis.App
+import           GitNetis.Resource.Bitbucket
 import           Options.Applicative
+import           Text.Printf
 
 data Command = BitbucketCommand BitbucketCommand
              | JIRACommand JIRACommand
@@ -30,14 +33,22 @@ exec (JIRACommand cmd)      = execJIRACommand cmd
 
 execBitbucketCommand :: BitbucketCommand -> IO ()
 execBitbucketCommand BitbucketListProjects = do
-  undefined
+  res <- bitbucketRequest GetProjectList
+  renderWithSeqNum (values res) renderProject
+  where
+    renderProject :: Project -> String
+    renderProject Project{..} =
+      printf "%s\t%s" projectKey projectDescription
 
 
 execJIRACommand :: JIRACommand -> IO ()
 execJIRACommand = undefined
 
 main :: IO ()
-main = execParser parser >>= exec
+main = do
+  cmd <- execParser parser
+  setGlobalEnv
+  exec cmd
   where
     parser = info (helper <*> argParser)
       ( fullDesc
