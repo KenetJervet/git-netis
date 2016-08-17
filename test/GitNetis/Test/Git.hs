@@ -17,7 +17,7 @@ tests = testGroup "Git tests"
 createDummyLine :: IO (DataType SetConfigItem)
 createDummyLine = run GitEnv (SetConfigItem dummyKey dummyVal)
   where
-    dummyKey = "git-netis.dummy"
+    dummyKey = "dummy"
     dummyVal = "dummy"
 
 testConfigCommands :: TestTree
@@ -32,4 +32,4 @@ testConfigCommands = testGroup "Git tests on config commands"
       res <- (Just <$> run GitEnv (GetConfigItem testKey)) `catch` \(_ :: Error) -> return Nothing
       assert $ isNothing res
   ]
-  where testKey = "git-netis.foo"
+  where testKey = "foo"
