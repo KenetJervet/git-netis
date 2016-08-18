@@ -96,7 +96,7 @@ deriving instance JIRAResource GetIssueList
 instance Resource GetIssueList where
   uriIO GetIssueList{..} = do
     -- TODO: Better url joining
-    (paramsIORef :: IORef [String]) <- newIORef []
+    (paramsIORef :: IORef [String]) <- newIORef ["sprint+in+openSprints()"]
     currentProject <- run GitEnv (GetConfigItem "activeJIRAProject")
     modifyIORef' paramsIORef (printf "project=%s" currentProject:)
     if getIssueListFreeOnly
