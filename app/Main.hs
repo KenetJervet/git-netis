@@ -24,8 +24,10 @@ data BitbucketCommand = BitbucketListProjects
 data JIRACommand = JIRAListProjects
                  | JIRAWorkonProject String
 
-data IssueCommand = IssueListIssues { issueListAll :: Bool
-                              }
+data IssueCommand = IssueListIssues { issueListAll      :: Bool
+                                    , issueListFreeOnly :: Bool
+                                    , issueListToDoOnly :: Bool
+                                    }
                   | IssueWorkon String
 
 
@@ -119,6 +121,15 @@ issueListParser = IssueListIssues
                <> short 'a'
                <> help "Show all issues instead of only issues assigned to me"
              )
+  <*> switch ( long "free"
+               <> short 'f'
+               <> help "Show only free issues (those that are not assigned to anyone) \
+                       \ Note that this will override `--all` option"
+             )
+  <*> switch ( long "todo"
+               <> short 't'
+               <> help "Show only issues in the `To do` status"
+             )
 
 issueWorkonParser :: Parser String
 issueWorkonParser = strArgument
@@ -171,12 +182,15 @@ execJIRACommand cmd = case cmd of
 execIssueCommand :: IssueCommand -> IO ()
 execIssueCommand cmd = case cmd of
   IssueListIssues{..} -> do
-    res <- jiraRequest RJ.GetIssueList{ getIssueListAll = issueListAll }
+    res <- jiraRequest RJ.GetIssueList{ getIssueListAll = issueListAll
+                                      , getIssueListFreeOnly = issueListFreeOnly
+                                      , getIssueListToDoOnly = issueListToDoOnly
+                                      }
     renderWithSeqNum (RJ.issues res) renderIssue
       where
         renderIssue :: RJ.Issue -> String
         renderIssue RJ.Issue{..} =
-          printf "%s\t%s\t%s" issueKey (maybe "\t" id issueAssignee) issueSummary
+          printf "%s\t%s\t%s\t%s" issueKey issueStatus (maybe "\t" id issueAssignee) issueSummary
   IssueWorkon key -> do
     workonIssue key
 

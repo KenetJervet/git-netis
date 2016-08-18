@@ -3,14 +3,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 
 module GitNetis.Resource.JIRA where
 
 import           Control.Lens
+import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.HashMap.Strict as H
+import           Data.IORef
+import           Data.List
 import           Data.Maybe
 import qualified Data.Vector         as V
 import           GHC.Generics
@@ -58,6 +62,7 @@ instance JSONResource ProjectList GetProjectList
 data Issue = Issue { issueKey      :: String
                    , issueSummary  :: String
                    , issueAssignee :: Maybe String
+                   , issueStatus   :: String
                    } deriving Show
 
 data IssueList = IssueList { issues :: [Issue]
@@ -70,9 +75,11 @@ instance FromJSON Issue where
     summary <- fields .: "summary"
     assignee <- fields .:? "assignee"
     assigneeName <- (if isNothing assignee then H.empty else fromJust assignee) .:? "name"
+    status <- (fields .: "status") >>= (.: "name")
     return Issue{ issueKey = key
                 , issueSummary = summary
                 , issueAssignee = assigneeName
+                , issueStatus = status
                 }
 
 instance FromJSON IssueList where
@@ -80,24 +87,35 @@ instance FromJSON IssueList where
     issues <- obj .: "issues"
     return IssueList{ issues = issues }
 
-data GetIssueList = GetIssueList { getIssueListAll :: Bool }
+data GetIssueList = GetIssueList { getIssueListAll      :: Bool
+                                 , getIssueListFreeOnly :: Bool
+                                 , getIssueListToDoOnly :: Bool
+                                 }
 deriving instance JIRAResource GetIssueList
 
 instance Resource GetIssueList where
   uriIO GetIssueList{..} = do
     -- TODO: Better url joining
+    (paramsIORef :: IORef [String]) <- newIORef []
     currentProject <- run GitEnv (GetConfigItem "activeJIRAProject")
-    if getIssueListAll
+    modifyIORef' paramsIORef (printf "project=%s" currentProject:)
+    if getIssueListFreeOnly
       then
-      return $ printf "search?jql=project=%s" currentProject
-    else do
+      modifyIORef' paramsIORef ("assignee+is+empty":)
+      else
+      when (not getIssueListAll) $ do
       currentUser <- run GitEnv (GetConfigItem "username")
-      return $ printf "search?jql=project=%s+and+assignee=%s" currentProject currentUser
+      modifyIORef' paramsIORef (printf "assignee=%s" currentUser:)
+    when getIssueListToDoOnly $ do
+      modifyIORef' paramsIORef ("status=open":)
+    params <- readIORef paramsIORef
+    return $ printf "search?jql=%s" $ intercalate "+and+" params
 
 instance JSONResource IssueList GetIssueList
 
 
-data GetIssue = GetIssue { getIssueKey :: String }
+data GetIssue = GetIssue { getIssueKey :: String
+                         }
 deriving instance JIRAResource GetIssue
 
 instance Resource GetIssue where
