@@ -44,6 +44,10 @@ executable git-netis
   hs-source-dirs:      app
   main-is:             Main.hs
   other-modules:       GitNetis.App
+                     , GitNetis.App.Bitbucket
+                     , GitNetis.App.Env
+                     , GitNetis.App.JIRA
+                     , GitNetis.App.Util
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , git-netis

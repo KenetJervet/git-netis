@@ -3,7 +3,10 @@
 module Main where
 
 import           Data.Text                   as T
-import           GitNetis.App
+import           GitNetis.App.Bitbucket
+import           GitNetis.App.Env
+import           GitNetis.App.JIRA
+import           GitNetis.App.Util
 import qualified GitNetis.Git                as G
 import           GitNetis.Resource.Bitbucket as RB
 import           GitNetis.Resource.JIRA      as RJ
