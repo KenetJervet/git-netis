@@ -150,7 +150,7 @@ exec (IssueCommand cmd)     = execIssueCommand cmd
 execBitbucketCommand :: BitbucketCommand -> IO ()
 execBitbucketCommand cmd = case cmd of
   BitbucketListProjects -> do
-    res <- bitbucketRequest RB.GetProjectList
+    res <- bitbucketRequestJSON RB.GetProjectList
     renderWithSeqNum (RB.projects res) renderProject
       where
         renderProject :: RB.Project -> String
@@ -166,7 +166,7 @@ execBitbucketCommand cmd = case cmd of
 execJIRACommand :: JIRACommand -> IO ()
 execJIRACommand cmd = case cmd of
   JIRAListProjects -> do
-    res <- jiraRequest RJ.GetProjectList
+    res <- jiraRequestJSON RJ.GetProjectList
     renderWithSeqNum (RJ.projects res) renderProject
       where
         renderProject :: RJ.Project -> String
@@ -182,7 +182,7 @@ execJIRACommand cmd = case cmd of
 execIssueCommand :: IssueCommand -> IO ()
 execIssueCommand cmd = case cmd of
   IssueListIssues{..} -> do
-    res <- jiraRequest RJ.GetIssueList{ getIssueListAll = issueListAll
+    res <- jiraRequestJSON RJ.GetIssueList{ getIssueListAll = issueListAll
                                       , getIssueListFreeOnly = issueListFreeOnly
                                       , getIssueListToDoOnly = issueListToDoOnly
                                       }

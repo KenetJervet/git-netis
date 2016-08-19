@@ -4,9 +4,12 @@ import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Types
 import           Data.ByteString
-import           Data.Text
+import           Data.Text as T
 import           Data.Text.Encoding as T
 import           Data.HashMap.Lazy as H
+
+packString :: String -> ByteString
+packString = T.encodeUtf8 . T.pack
 
 packText :: Text -> ByteString
 packText = T.encodeUtf8

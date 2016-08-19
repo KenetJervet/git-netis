@@ -7,6 +7,7 @@ module GitNetis.App where
 
 import           Control.Monad
 import           Control.Monad.Catch
+import           Data.ByteString.Lazy             (ByteString)
 import           Data.IORef
 import qualified Data.Text                   as T
 import           GitNetis.Git                hiding (Error)
@@ -48,22 +49,44 @@ setGlobalEnv = do
   writeIORef globalEnv env
   return env
 
-request_ :: (JSONResource json res) => res -> (Env -> String) -> IO json
-request_ res rootGetter = do
+baseRequest_ :: (Resource method res) => res
+         -> (Env -> String)
+         -> (RequestOptions -> res -> IO a)
+         -> IO a
+baseRequest_ res rootGetter respGetter = do
   env@Env{..} <- readIORef globalEnv
   let ro = RequestOptions { authOptions = A.BasicAuth { A.username = username
                                                       , A.password = password
                                                       }
                           , resourceRoot = rootGetter env
                           }
-  getJSON ro res
+  respGetter ro res
+
+request_ :: (Resource method res) => res -> (Env -> String) -> IO ByteString
+request_ res rootGetter = baseRequest_ res rootGetter get
+
+requestJSON_ :: (JSONResource json method res) => res -> (Env -> String) -> IO json
+requestJSON_ res rootGetter = baseRequest_ res rootGetter getJSON
 
 
-bitbucketRequest :: (BitbucketResource res, JSONResource json res) => res -> IO json
+bitbucketRequest :: (BitbucketResource method res, Resource method res)
+                 => res
+                 -> IO ByteString
 bitbucketRequest res = request_ res bitbucketRoot
 
-jiraRequest :: (JIRAResource res, JSONResource json res) => res -> IO json
+bitbucketRequestJSON :: (BitbucketResource method res, JSONResource json method res)
+                 => res
+                 -> IO json
+bitbucketRequestJSON res = requestJSON_ res bitbucketRoot
+
+
+jiraRequest :: (JIRAResource method res, Resource method res)
+                 => res
+                 -> IO ByteString
 jiraRequest res = request_ res jiraRoot
+
+jiraRequestJSON :: (JIRAResource method res, JSONResource json method res) => res -> IO json
+jiraRequestJSON res = requestJSON_ res jiraRoot
 
 renderWithSeqNum :: forall a. Show a => [a] -> (a -> String) -> IO ()
 renderWithSeqNum objs showFunc = do
@@ -76,7 +99,7 @@ renderWithSeqNum objs showFunc = do
 ensureBitbucketProjectExists :: String  -- ^ project key
                              -> IO ()
 ensureBitbucketProjectExists key = do
-  res <- bitbucketRequest RB.GetProjectList
+  res <- bitbucketRequestJSON RB.GetProjectList
   unless (key `elem` (map RB.projectKey (RB.projects res))) $
     throwM $ InvalidBitbucketProject (printf "Project does not exist: %s" key)
 setActiveBitbucketProject :: String  -- ^ project key
@@ -89,7 +112,7 @@ setActiveBitbucketProject key = do
 ensureJIRAProjectExists :: String  -- ^ project key
                         -> IO ()
 ensureJIRAProjectExists key = do
-  res <- jiraRequest RJ.GetProjectList
+  res <- jiraRequestJSON RJ.GetProjectList
   unless (key `elem` (map RJ.projectKey (RJ.projects res))) $
     throwM $ InvalidJIRAProject (printf "Project does not exist: %s" key)
 
@@ -104,7 +127,7 @@ setActiveJIRAProject key = do
 ensureIssueExists :: String  -- ^ issue key
                   -> IO ()
 ensureIssueExists key = do
-  void $ jiraRequest RJ.GetIssue{ getIssueKey = key } `catch` handler
+  void $ jiraRequestJSON RJ.GetIssue{ getIssueKey = key } `catch` handler
   where
     handler NotFound = do
       throwM $ InvalidJIRAIssue (printf "Issue does not exist: %s" key)
@@ -113,4 +136,4 @@ workonIssue :: String  -- ^ issue key
             -> IO ()
 workonIssue key = do
   ensureIssueExists key
-  putStrLn "Not implemented yet _(:з」∠)_"
+  void $ jiraRequest RJ.WorkonIssue { workonIssueKey = key }

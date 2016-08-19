@@ -5,6 +5,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module GitNetis.Resource.JIRA where
 
@@ -12,6 +13,7 @@ import           Control.Lens
 import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Lens
+import           Data.Aeson.QQ
 import           Data.HashMap.Strict as H
 import           Data.IORef
 import           Data.List
@@ -23,11 +25,11 @@ import           GitNetis.Resource
 import           GitNetis.Util
 import           Text.Printf
 
-class Resource res => JIRAResource res
+class Resource method res => JIRAResource method res
 
---------------
--- GetProjectList
---------------
+-------------
+-- Data decls
+-------------
 
 data Project = Project { projectKey  :: String
                        , projectName :: String
@@ -35,6 +37,90 @@ data Project = Project { projectKey  :: String
 
 newtype ProjectList = ProjectList { projects :: [Project]
                                   } deriving Show
+
+
+
+
+data Issue = Issue { issueKey      :: String
+                   , issueSummary  :: String
+                   , issueAssignee :: Maybe String
+                   , issueStatus   :: String
+                   } deriving Show
+
+data IssueList = IssueList { issues :: [Issue]
+                           } deriving Show
+
+
+------------
+-- Resources
+------------
+
+data GetProjectList = GetProjectList
+
+data GetIssueList = GetIssueList { getIssueListAll      :: Bool
+                                 , getIssueListFreeOnly :: Bool
+                                 , getIssueListToDoOnly :: Bool
+                                 }
+
+data GetIssue = GetIssue { getIssueKey :: String
+                         }
+
+data WorkonIssue = WorkonIssue { workonIssueKey :: String
+                               }
+
+
+---------------------
+-- Resource instances
+---------------------
+
+instance Resource HttpGet GetIssueList where
+  uri GetIssueList{..} = do
+    -- TODO: Better url joining
+    (paramsIORef :: IORef [String]) <- newIORef ["sprint+in+openSprints()"]
+    currentProject <- run GitEnv (GetConfigItem "activeJIRAProject")
+    modifyIORef' paramsIORef (printf "project=%s" currentProject:)
+    if getIssueListFreeOnly
+      then
+      modifyIORef' paramsIORef ("assignee+is+empty":)
+      else
+      when (not getIssueListAll) $ do
+      currentUser <- run GitEnv (GetConfigItem "username")
+      modifyIORef' paramsIORef (printf "assignee=%s" currentUser:)
+    when getIssueListToDoOnly $ do
+      modifyIORef' paramsIORef ("status=open":)
+    params <- readIORef paramsIORef
+    return $ printf "search?jql=%s" $ intercalate "+and+" params
+
+
+instance Resource HttpGet GetIssue where
+  uri GetIssue{..} = return $ printf "issue/%s" getIssueKey
+
+
+instance Resource HttpGet GetProjectList where
+  uri _ = return "project"
+
+
+instance Resource HttpPost WorkonIssue where
+  uri WorkonIssue{..} = return $ printf "issue/%s/transitions" workonIssueKey
+  -- payload WorkonIssue{..} = return $ HttpPostJSONPayload $ H.fromList [("SDF", "SDF")] :: [(String, String)]
+  payload WorkonIssue{..} = return $ HttpPostJSONPayload $
+    [aesonQQ|{
+               "update": {
+                 "comment": {
+                   "add": {
+                     "body": "--- Transition done from git-netis tool. Consult kenneth.zhao for further information"
+                   }
+                 }
+               },
+               "transition": {
+                 "id": "4"
+               }
+             }|]
+
+
+-----------------
+-- JSON instances
+-----------------
 
 instance FromJSON Project where
   parseJSON = withObject "project object" $ \obj -> do
@@ -45,28 +131,6 @@ instance FromJSON Project where
 instance FromJSON ProjectList where
   parseJSON = withArray "project objects" $ \obj ->
     ProjectList <$> (mapM parseJSON . V.toList) obj
-
-
-data GetProjectList = GetProjectList deriving JIRAResource
-
-instance Resource GetProjectList where
-  uri _ = "project"
-
-instance JSONResource ProjectList GetProjectList
-
-
----------------
--- GetIssueList
----------------
-
-data Issue = Issue { issueKey      :: String
-                   , issueSummary  :: String
-                   , issueAssignee :: Maybe String
-                   , issueStatus   :: String
-                   } deriving Show
-
-data IssueList = IssueList { issues :: [Issue]
-                           } deriving Show
 
 instance FromJSON Issue where
   parseJSON = withObject "issue object" $ \obj -> do
@@ -87,38 +151,26 @@ instance FromJSON IssueList where
     issues <- obj .: "issues"
     return IssueList{ issues = issues }
 
-data GetIssueList = GetIssueList { getIssueListAll      :: Bool
-                                 , getIssueListFreeOnly :: Bool
-                                 , getIssueListToDoOnly :: Bool
-                                 }
-deriving instance JIRAResource GetIssueList
 
-instance Resource GetIssueList where
-  uriIO GetIssueList{..} = do
-    -- TODO: Better url joining
-    (paramsIORef :: IORef [String]) <- newIORef ["sprint+in+openSprints()"]
-    currentProject <- run GitEnv (GetConfigItem "activeJIRAProject")
-    modifyIORef' paramsIORef (printf "project=%s" currentProject:)
-    if getIssueListFreeOnly
-      then
-      modifyIORef' paramsIORef ("assignee+is+empty":)
-      else
-      when (not getIssueListAll) $ do
-      currentUser <- run GitEnv (GetConfigItem "username")
-      modifyIORef' paramsIORef (printf "assignee=%s" currentUser:)
-    when getIssueListToDoOnly $ do
-      modifyIORef' paramsIORef ("status=open":)
-    params <- readIORef paramsIORef
-    return $ printf "search?jql=%s" $ intercalate "+and+" params
+--------------------------
+-- JSON resource instances
+--------------------------
 
-instance JSONResource IssueList GetIssueList
+instance JSONResource ProjectList HttpGet GetProjectList
+
+instance JSONResource IssueList HttpGet GetIssueList
+
+instance JSONResource Issue HttpGet GetIssue
 
 
-data GetIssue = GetIssue { getIssueKey :: String
-                         }
-deriving instance JIRAResource GetIssue
+--------------------------
+-- JIRA resource instances
+--------------------------
 
-instance Resource GetIssue where
-  uri GetIssue{..} = printf "issue/%s" getIssueKey
+instance JIRAResource HttpGet GetProjectList
 
-instance JSONResource Issue GetIssue
+instance JIRAResource HttpGet GetIssueList
+
+instance JIRAResource HttpGet GetIssue
+
+instance JIRAResource HttpPost WorkonIssue

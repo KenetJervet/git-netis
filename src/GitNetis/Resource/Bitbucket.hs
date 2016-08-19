@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE RankNTypes #-}
 
 module GitNetis.Resource.Bitbucket where
 
@@ -9,18 +10,37 @@ import           Data.Aeson
 import           GHC.Generics
 import           GitNetis.Resource
 
-class Resource res => BitbucketResource res
+class Resource method res => BitbucketResource method res
 
-data GetProjectList = GetProjectList deriving BitbucketResource
-
-instance Resource GetProjectList where
-  uri _ = "projects"
+-------------
+-- Data decls
+-------------
 
 data Project = Project { projectKey         :: String
                        , projectDescription :: String
                        } deriving Show
 
 data ProjectList = ProjectList{ projects :: [Project] } deriving Show
+
+
+------------
+-- Resources
+------------
+
+data GetProjectList = GetProjectList
+
+
+---------------------
+-- Resource instances
+---------------------
+
+instance Resource HttpGet GetProjectList where
+  uri _ = return "projects"
+
+
+-----------------
+-- JSON instances
+-----------------
 
 instance FromJSON Project where
   parseJSON = withObject "project object" $ \obj -> do
@@ -33,4 +53,16 @@ instance FromJSON ProjectList where
     values <- obj .: "values"
     return ProjectList{ projects = values }
 
-instance JSONResource ProjectList GetProjectList
+
+--------------------------
+-- JSON resource instances
+--------------------------
+
+instance JSONResource ProjectList HttpGet GetProjectList
+
+
+-------------------------------
+-- Bitbucket resource instances
+-------------------------------
+
+instance BitbucketResource HttpGet GetProjectList
