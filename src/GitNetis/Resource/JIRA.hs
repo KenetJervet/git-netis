@@ -105,15 +105,15 @@ instance Resource HttpPost WorkonIssue where
   -- payload WorkonIssue{..} = return $ HttpPostJSONPayload $ H.fromList [("SDF", "SDF")] :: [(String, String)]
   payload WorkonIssue{..} = return $ HttpPostJSONPayload $
     [aesonQQ|{
-               "update": {
-                 "comment": {
-                   "add": {
-                     "body": "--- Transition done from git-netis tool. Consult kenneth.zhao for further information"
+               update: {
+                 comment: [{
+                   add: {
+                     body: "--- Transition done from git-netis tool. Consult kenneth.zhao for further information"
                    }
-                 }
+                 }]
                },
-               "transition": {
-                 "id": "4"
+               transition: {
+                 id: "4"
                }
              }|]
 

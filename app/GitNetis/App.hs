@@ -49,6 +49,9 @@ setGlobalEnv = do
   writeIORef globalEnv env
   return env
 
+inform :: String -> IO ()
+inform = putStrLn
+
 baseRequest_ :: (Resource method res) => res
          -> (Env -> String)
          -> (RequestOptions -> res -> IO a)
@@ -137,3 +140,4 @@ workonIssue :: String  -- ^ issue key
 workonIssue key = do
   ensureIssueExists key
   void $ jiraRequest RJ.WorkonIssue { workonIssueKey = key }
+  inform $ printf "You are now working on %s.\n" key
