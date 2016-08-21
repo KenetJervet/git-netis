@@ -13,12 +13,20 @@ import           GHC.Generics
 import           System.IO
 import           System.IO.Unsafe
 
-data TestConfig = TestConfig { mycred :: MyCredConfig
+data TestConfig = TestConfig { myCred :: MyCredConfig
+                             , myJIRAConfig :: MyJIRAConfig
+                             , myBitbucketConfig :: MyBitbucketConfig
                              } deriving (Show, Generic, FromJSON)
 
 data MyCredConfig = MyCredConfig { username :: String
                                  , password :: String
                                  } deriving (Show, Generic, FromJSON)
+
+data MyJIRAConfig = MyJIRAConfig { activeJIRAProject :: String
+                                 } deriving (Show, Generic, FromJSON)
+
+data MyBitbucketConfig = MyBitbucketConfig { activeBitbucketProject :: String
+                                           } deriving (Show, Generic, FromJSON)
 
 readConfig :: FilePath -> IO TestConfig
 readConfig = LBS.readFile >=> return . fromJust . decode

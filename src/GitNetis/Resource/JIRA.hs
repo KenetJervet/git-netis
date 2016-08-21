@@ -63,9 +63,6 @@ data Project = Project { projectKey  :: String
 newtype ProjectList = ProjectList { projects :: [Project]
                                   } deriving Show
 
-
-
-
 data Issue = Issue { issueKey      :: String
                    , issueSummary  :: String
                    , issueAssignee :: Maybe String
