@@ -1,5 +1,8 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TypeFamilies   #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 module GitNetis.Git where
 
@@ -37,28 +40,77 @@ class Command cmd where
 gitConfigPrefix :: String
 gitConfigPrefix = "git-netis."
 
-data GetConfigItem = GetConfigItem String
-data SetConfigItem = SetConfigItem String String
-data UnsetConfigItem = UnsetConfigItem String
+class ConfigItem configItem where
+  type ValueType configItem :: *
+  type ValueType configItem = String
+  key :: configItem -> String
+  coerceFrom :: configItem -> String -> ValueType configItem
+  default coerceFrom :: configItem -> String -> String
+  coerceFrom _ = id
+  coerceTo :: configItem -> ValueType configItem -> String
+  default coerceTo :: configItem -> String -> String
+  coerceTo _ = id
 
-instance Command GetConfigItem where
-  type DataType GetConfigItem = String
-  run _ (GetConfigItem key) = do
-    (exitCode, stdout, _) <- exec_ ["config", gitConfigPrefix ++ key]
+data UserName = UserName
+data Password = Password
+data BitbucketRoot = BitbucketRoot
+data JIRARoot = JIRARoot
+data ActiveJIRAProject = ActiveJIRAProject
+data ActiveBitbucketProject = ActiveBitbucketProject
+
+instance ConfigItem UserName where
+  key _ = "username"
+
+instance ConfigItem Password where
+  key _ = "password"
+
+instance ConfigItem BitbucketRoot where
+  key _ = "bitbucketRoot"
+
+instance ConfigItem JIRARoot where
+  key _ = "jiraRoot"
+
+instance ConfigItem ActiveJIRAProject where
+  key _ = "activeJIRAProject"
+
+instance ConfigItem ActiveBitbucketProject where
+  key _ = "activeBitbucketProject"
+
+
+data GetConfigItem configItem where
+  GetConfigItem :: ConfigItem configItem
+                => configItem
+                -> GetConfigItem configItem
+
+data SetConfigItem configItem where
+  SetConfigItem :: ConfigItem configItem
+                => configItem
+                -> ValueType configItem
+                -> SetConfigItem configItem
+
+data UnsetConfigItem configItem where
+  UnsetConfigItem :: ConfigItem configItem
+                  => configItem
+                  -> UnsetConfigItem configItem
+
+instance Command (GetConfigItem item) where
+  type DataType (GetConfigItem item) = ValueType item
+  run _ (GetConfigItem item) = do
+    (exitCode, stdout, _) <- exec_ ["config", gitConfigPrefix ++ key item]
     case exitCode of
-      ExitSuccess   -> return $ init stdout  -- Remove trailing \n
-      ExitFailure _ -> throwM $ GitConfigError $ printf "Dunno what happened. Maybe key `%s` was not found?" key
+      ExitSuccess   -> return $ coerceFrom item (init stdout)  -- Remove trailing \n
+      ExitFailure _ -> throwM $ GitConfigError $ printf "Dunno what happened. Maybe key `%s` was not found?" (key item)
 
-instance Command SetConfigItem where
-  run _ (SetConfigItem key value) = do
-    (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key, value]
+instance Command (SetConfigItem configItem) where
+  run _ (SetConfigItem item value) = do
+    (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key item, coerceTo item value]
     case exitCode of
       ExitSuccess   -> return ()
       ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."
 
-instance Command UnsetConfigItem where
-  run _ (UnsetConfigItem key) = do
-    (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key]
+instance Command (UnsetConfigItem configItem) where
+  run _ (UnsetConfigItem item) = do
+    (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return ()
       ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."

@@ -2,10 +2,10 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module GitNetis.Resource.JIRA where
 
@@ -14,7 +14,7 @@ import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.Aeson.QQ
-import           Data.HashMap.Strict as H
+import qualified Data.HashMap.Strict as H
 import           Data.IORef
 import           Data.List
 import           Data.Maybe
@@ -26,6 +26,31 @@ import           GitNetis.Util
 import           Text.Printf
 
 class Resource method res => JIRAResource method res
+
+--------
+-- Utils
+--------
+
+data JQLQuery = JQLEq String String
+              | JQLIsEmpty String
+              | JQLIn String String
+
+jqlQueryToString :: JQLQuery -> String
+jqlQueryToString q = case q of
+  JQLEq k v -> printf "%s=%s" k v
+  JQLIsEmpty k -> printf "%s+is+empty" k
+  JQLIn k v -> printf "%s+in+%s" k v
+
+assembleJQL :: [Maybe JQLQuery] -> String
+assembleJQL queries =
+  let cleanedQueries = catMaybes queries
+  in
+    intercalate "+and+" (map jqlQueryToString cleanedQueries)
+  where
+    assembleKVP (k, v) =
+      case v of
+        Nothing -> printf "%s+is+empty" k
+        (Just jv) -> printf "%s=%s" k jv
 
 -------------
 -- Data decls
@@ -57,9 +82,10 @@ data IssueList = IssueList { issues :: [Issue]
 
 data GetProjectList = GetProjectList
 
-data GetIssueList = GetIssueList { getIssueListAll      :: Bool
-                                 , getIssueListFreeOnly :: Bool
-                                 , getIssueListToDoOnly :: Bool
+data GetIssueList = GetIssueList { getIssueListActiveProject   :: String
+                                 , getIssueListAssignee        :: Maybe String
+                                 , getIssueListStatus          :: Maybe String
+                                 , getIssueListOnlyOpenSprints :: Bool
                                  }
 
 data GetIssue = GetIssue { getIssueKey :: String
@@ -76,20 +102,23 @@ data WorkonIssue = WorkonIssue { workonIssueKey :: String
 instance Resource HttpGet GetIssueList where
   uri GetIssueList{..} = do
     -- TODO: Better url joining
-    (paramsIORef :: IORef [String]) <- newIORef ["sprint+in+openSprints()"]
-    currentProject <- run GitEnv (GetConfigItem "activeJIRAProject")
-    modifyIORef' paramsIORef (printf "project=%s" currentProject:)
-    if getIssueListFreeOnly
-      then
-      modifyIORef' paramsIORef ("assignee+is+empty":)
-      else
-      when (not getIssueListAll) $ do
-      currentUser <- run GitEnv (GetConfigItem "username")
-      modifyIORef' paramsIORef (printf "assignee=%s" currentUser:)
-    when getIssueListToDoOnly $ do
-      modifyIORef' paramsIORef ("status=open":)
-    params <- readIORef paramsIORef
-    return $ printf "search?jql=%s" $ intercalate "+and+" params
+    let activeProjectQuery = Just $ JQLEq "project" getIssueListActiveProject
+        assigneeQuery = maybe Nothing
+          (
+            \assignee -> if assignee == ""
+                         then Just $ JQLIsEmpty "assignee"
+                         else Just $ JQLEq "assignee" assignee
+          ) getIssueListAssignee
+        sprintQuery = if getIssueListOnlyOpenSprints
+                      then Just $ JQLIn "sprint" "openSprints()"
+                      else Nothing
+        statusQuery = JQLEq "status" <$> getIssueListStatus
+    return $ printf "search?jql=%s" $ assembleJQL
+      [ activeProjectQuery
+      , assigneeQuery
+      , sprintQuery
+      , statusQuery
+      ]
 
 
 instance Resource HttpGet GetIssue where

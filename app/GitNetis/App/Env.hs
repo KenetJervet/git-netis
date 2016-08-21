@@ -16,10 +16,10 @@ globalEnv = unsafePerformIO $ newIORef Env{}
 
 setGlobalEnv :: IO Env
 setGlobalEnv = do
-  username <- run GitEnv (GetConfigItem "username")
-  password <- run GitEnv (GetConfigItem "password")
-  bitbucketRoot <- run GitEnv (GetConfigItem "bitbucketRoot")
-  jiraRoot <- run GitEnv (GetConfigItem "jiraRoot")
+  username <- run GitEnv (GetConfigItem UserName)
+  password <- run GitEnv (GetConfigItem Password)
+  bitbucketRoot <- run GitEnv (GetConfigItem BitbucketRoot)
+  jiraRoot <- run GitEnv (GetConfigItem JIRARoot)
   let env = Env { username = username
                 , password = password
                 , jiraRoot = jiraRoot

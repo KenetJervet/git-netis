@@ -39,7 +39,7 @@ setActiveJIRAProject :: String  -- ^ project key
                      -> IO ()
 setActiveJIRAProject key = do
   ensureJIRAProjectExists key
-  run GitEnv (SetConfigItem "activeJIRAProject" key)
+  run GitEnv (SetConfigItem ActiveJIRAProject key)
 
 ensureIssueExists :: String  -- ^ issue key
                   -> IO ()

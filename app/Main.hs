@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 module Main where
 
@@ -7,6 +8,7 @@ import           GitNetis.App.Bitbucket
 import           GitNetis.App.Env
 import           GitNetis.App.JIRA
 import           GitNetis.App.Util
+import           GitNetis.Git                hiding (Command, exec)
 import qualified GitNetis.Git                as G
 import           GitNetis.Resource.Bitbucket as RB
 import           GitNetis.Resource.JIRA      as RJ
@@ -185,10 +187,15 @@ execJIRACommand cmd = case cmd of
 execIssueCommand :: IssueCommand -> IO ()
 execIssueCommand cmd = case cmd of
   IssueListIssues{..} -> do
-    res <- jiraRequestJSON RJ.GetIssueList{ getIssueListAll = issueListAll
-                                      , getIssueListFreeOnly = issueListFreeOnly
-                                      , getIssueListToDoOnly = issueListToDoOnly
-                                      }
+    activeProject <- run GitEnv (GetConfigItem ActiveJIRAProject)
+    currentUser <- run GitEnv (GetConfigItem UserName)
+    let assignee = [ if issueListFreeOnly then "" else currentUser | not issueListAll ]
+        status = [ "open" | issueListToDoOnly ]
+    res <- jiraRequestJSON RJ.GetIssueList{ getIssueListActiveProject = activeProject
+                                          , getIssueListAssignee = assignee
+                                          , getIssueListStatus = status
+                                          , getIssueListOnlyOpenSprints = True
+                                          }
     renderWithSeqNum (RJ.issues res) renderIssue
       where
         renderIssue :: RJ.Issue -> String

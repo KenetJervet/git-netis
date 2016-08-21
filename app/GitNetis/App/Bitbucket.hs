@@ -39,6 +39,6 @@ setActiveBitbucketProject :: String  -- ^ project key
                           -> IO ()
 setActiveBitbucketProject key = do
   ensureBitbucketProjectExists key
-  run GitEnv (SetConfigItem "activeBitbucketProject" key)
+  run GitEnv (SetConfigItem ActiveBitbucketProject key)
 
 
