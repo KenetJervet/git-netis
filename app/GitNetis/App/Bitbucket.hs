@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module GitNetis.App.Bitbucket where
 
@@ -6,6 +7,7 @@ import           Control.Monad
 import           Control.Monad.Catch
 import           Data.ByteString.Lazy        (ByteString)
 import           GitNetis.App.Env
+import           GitNetis.App.Internal
 import           GitNetis.App.Util
 import           GitNetis.Git
 import           GitNetis.Resource
@@ -42,3 +44,30 @@ setActiveBitbucketProject key = do
   run GitEnv (SetConfigItem ActiveBitbucketProject key)
 
 
+------------
+-- Renderers
+------------
+
+type Renderer obj = obj -> String
+
+render :: Renderer obj -> obj -> String
+render f = f
+
+class DefaultRenderer obj where
+  def :: Renderer obj
+
+instance DefaultRenderer Project where
+  def Project{..} = printf "%s\t%s" projectKey projectDescription
+
+instance DefaultRenderer ProjectList where
+  def ProjectList{..} = renderWithSeqNum projects def
+
+
+-----------------------------
+-- Project bitbucket projects
+-----------------------------
+
+printProjects :: IO ()
+printProjects = do
+  res <- bitbucketRequestJSON GetProjectList
+  putStr $ renderWithSeqNum (projects res) (render def)

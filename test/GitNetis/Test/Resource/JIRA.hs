@@ -21,18 +21,22 @@ netisJIRARoot = "http://jira.dev.netis.com.cn:8080/rest/api/2/"
 
 authFailedRequestOptions :: RequestOptions
 authFailedRequestOptions = let
+  globalConfig = unsafePerformIO (readIORef Conf.globalConfig)
+  jiraRoot = Conf.jiraRoot . Conf.myJIRAConfig $ globalConfig
   auth = BasicAuth { username = "foo", password = "bar" }
   in
-  RequestOptions { authOptions = auth, resourceRoot = netisJIRARoot }
+  RequestOptions { authOptions = auth, resourceRoot = jiraRoot }
 
 authOKRequestOptions :: RequestOptions
 authOKRequestOptions = let
   globalConfig = unsafePerformIO (readIORef Conf.globalConfig)
+  jiraRoot = Conf.jiraRoot . Conf.myJIRAConfig $ globalConfig
+
   auth = BasicAuth { username = Conf.username . Conf.myCred $ globalConfig
                    , password = Conf.password . Conf.myCred $ globalConfig
                    }
   in
-  RequestOptions { authOptions = auth, resourceRoot = netisJIRARoot }
+  RequestOptions { authOptions = auth, resourceRoot = jiraRoot }
 
 
 tests :: TestTree

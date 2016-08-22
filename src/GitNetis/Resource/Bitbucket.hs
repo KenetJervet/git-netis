@@ -1,14 +1,16 @@
+{-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module GitNetis.Resource.Bitbucket where
 
 import           Data.Aeson
 import           GHC.Generics
 import           GitNetis.Resource
+import           Text.Printf
 
 class Resource method res => BitbucketResource method res
 
@@ -20,7 +22,15 @@ data Project = Project { projectKey         :: String
                        , projectDescription :: String
                        } deriving Show
 
-data ProjectList = ProjectList{ projects :: [Project] } deriving Show
+data ProjectList = ProjectList { projects :: [Project]
+                               } deriving Show
+
+data Repo = Repo { repoName       :: String
+                 , repoProjectKey :: String
+                 }
+
+data RepoList = RepoList { repos :: [Repo]
+                         }
 
 
 ------------
@@ -28,6 +38,8 @@ data ProjectList = ProjectList{ projects :: [Project] } deriving Show
 ------------
 
 data GetProjectList = GetProjectList
+data GetRepoList = GetRepoList { getRepoProjectKey :: String
+                               }
 
 
 ---------------------
@@ -36,6 +48,9 @@ data GetProjectList = GetProjectList
 
 instance Resource HttpGet GetProjectList where
   uri _ = return "projects"
+
+instance Resource HttpGet GetRepoList where
+  uri GetRepoList{..} = return $ printf "projects/%s/repos" getRepoProjectKey
 
 
 -----------------
@@ -49,9 +64,20 @@ instance FromJSON Project where
     return Project{ projectKey = key, projectDescription = description }
 
 instance FromJSON ProjectList where
-  parseJSON = withObject "Bitbucket Rest API returned object" $ \obj -> do
+  parseJSON = withObject "project list object" $ \obj -> do
     values <- obj .: "values"
     return ProjectList{ projects = values }
+
+instance FromJSON Repo where
+  parseJSON = withObject "repo object" $ \obj -> do
+    name <- obj .: "name"
+    projectKey <- obj .: "project" >>= (.: "key")
+    return Repo{ repoName = name, repoProjectKey = projectKey }
+
+instance FromJSON RepoList where
+  parseJSON = withObject "repo list object" $ \obj -> do
+    values <- obj .: "values"
+    return RepoList{ repos = values }
 
 
 --------------------------
@@ -60,9 +86,13 @@ instance FromJSON ProjectList where
 
 instance JSONResource ProjectList HttpGet GetProjectList
 
+instance JSONResource RepoList HttpGet GetRepoList
+
 
 -------------------------------
 -- Bitbucket resource instances
 -------------------------------
 
 instance BitbucketResource HttpGet GetProjectList
+
+instance BitbucketResource HttpGet GetRepoList

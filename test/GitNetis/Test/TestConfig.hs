@@ -22,10 +22,12 @@ data MyCredConfig = MyCredConfig { username :: String
                                  , password :: String
                                  } deriving (Show, Generic, FromJSON)
 
-data MyJIRAConfig = MyJIRAConfig { activeJIRAProject :: String
+data MyJIRAConfig = MyJIRAConfig { jiraRoot :: String
+                                 , activeJIRAProject :: String
                                  } deriving (Show, Generic, FromJSON)
 
-data MyBitbucketConfig = MyBitbucketConfig { activeBitbucketProject :: String
+data MyBitbucketConfig = MyBitbucketConfig { bitbucketRoot :: String
+                                           , activeBitbucketProject :: String
                                            } deriving (Show, Generic, FromJSON)
 
 readConfig :: FilePath -> IO TestConfig

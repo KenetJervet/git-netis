@@ -4,9 +4,9 @@
 module Main where
 
 import           Data.Text                   as T
-import           GitNetis.App.Bitbucket
+import           GitNetis.App.Bitbucket      as AB
 import           GitNetis.App.Env
-import           GitNetis.App.JIRA
+import           GitNetis.App.JIRA           as AJ
 import           GitNetis.App.Util
 import           GitNetis.Git                hiding (Command, exec)
 import qualified GitNetis.Git                as G
@@ -19,9 +19,12 @@ import           Text.Printf
 -- Commands
 -----------
 
-data Command = BitbucketCommand BitbucketCommand
+data Command = SetupCommand SetupCommand
+             | BitbucketCommand BitbucketCommand
              | JIRACommand JIRACommand
              | IssueCommand IssueCommand
+
+data SetupCommand = Setup { interactive :: Bool }
 
 data BitbucketCommand = BitbucketListProjects
                       | BitbucketWorkonProject String
@@ -47,7 +50,21 @@ argParser = subparser
     command "jira" (info (helper <*> (JIRACommand <$> jiraParser)) idm)
     <>
     command "issue" (info (helper <*> (IssueCommand <$> issueParser)) idm)
+    <>
+    command "setup" (info (helper <*> (SetupCommand <$> setupParser)) idm)
   )
+
+-------------------
+-- Setup subparsers
+-------------------
+
+setupParser :: Parser SetupCommand
+setupParser =
+  Setup <$> switch ( long "interactive"
+                     <> short 'i'
+                     <> help "Setup git-netis environment"
+                   )
+
 
 -----------------------
 -- Bitbucket subparsers
@@ -143,24 +160,44 @@ issueWorkonParser = strArgument
                       help "The key of the issue"
                     )
 
+-------
+-- Exec
+-------
+
+exec :: Command -> IO ()
+exec (SetupCommand cmd) = execSetupCommand cmd
+exec cmd = do
+  setGlobalEnv
+  case cmd of
+    BitbucketCommand cmd -> execBitbucketCommand cmd
+    JIRACommand cmd      -> execJIRACommand cmd
+    IssueCommand cmd     -> execIssueCommand cmd
+
+
+---------------------
+-- Exec Setup command
+---------------------
+
+execSetupCommand :: SetupCommand -> IO ()
+execSetupCommand cmd = case cmd of
+  Setup{..} -> do
+     username <- prompt "Your user name:"
+     password <- promptPassword "Your password:"
+     run GitEnv (SetConfigItem UserName username)
+     run GitEnv (SetConfigItem Password password)
+     inform ""
+     inform "Your username and password have been saved."
+     AB.printProjects
+     project <- prompt "Select a project to work with: "
+     inform "GG: %s" project
+
 -------------------------
 -- Exec Bitbucket command
 -------------------------
 
-exec :: Command -> IO ()
-exec (BitbucketCommand cmd) = execBitbucketCommand cmd
-exec (JIRACommand cmd)      = execJIRACommand cmd
-exec (IssueCommand cmd)     = execIssueCommand cmd
-
 execBitbucketCommand :: BitbucketCommand -> IO ()
 execBitbucketCommand cmd = case cmd of
-  BitbucketListProjects -> do
-    res <- bitbucketRequestJSON RB.GetProjectList
-    renderWithSeqNum (RB.projects res) renderProject
-      where
-        renderProject :: RB.Project -> String
-        renderProject RB.Project{..} =
-          printf "%s\t%s" projectKey projectDescription
+  BitbucketListProjects      -> AB.printProjects
   BitbucketWorkonProject key -> setActiveBitbucketProject key
 
 
@@ -172,7 +209,7 @@ execJIRACommand :: JIRACommand -> IO ()
 execJIRACommand cmd = case cmd of
   JIRAListProjects -> do
     res <- jiraRequestJSON RJ.GetProjectList
-    renderWithSeqNum (RJ.projects res) renderProject
+    putStr $ renderWithSeqNum (RJ.projects res) renderProject
       where
         renderProject :: RJ.Project -> String
         renderProject RJ.Project{..} =
@@ -196,7 +233,7 @@ execIssueCommand cmd = case cmd of
                                           , getIssueListStatus = status
                                           , getIssueListOnlyOpenSprints = True
                                           }
-    renderWithSeqNum (RJ.issues res) renderIssue
+    putStr $ renderWithSeqNum (RJ.issues res) renderIssue
       where
         renderIssue :: RJ.Issue -> String
         renderIssue RJ.Issue{..} =
@@ -207,7 +244,6 @@ execIssueCommand cmd = case cmd of
 main :: IO ()
 main = do
   cmd <- execParser parser
-  setGlobalEnv
   exec cmd
   where
     parser = info (helper <*> argParser)
