@@ -73,4 +73,4 @@ renderWithSeqNum objs showFunc =
   where
     render :: a -> Int -> String
     render obj seqNum =
-      [i|[#{seqNum}]\t#{showFunc obj}|]
+      [i|[#{seqNum}]\t#{showFunc obj}\n|]

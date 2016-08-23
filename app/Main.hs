@@ -1,9 +1,12 @@
 {-# LANGUAGE MonadComprehensions #-}
 {-# LANGUAGE NamedFieldPuns      #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE RecordWildCards     #-}
 
 module Main where
 
+import           Data.Maybe
+import           Data.String.Interpolate
 import           Data.Text                   as T
 import           GitNetis.App.Bitbucket      as AB
 import           GitNetis.App.Env
@@ -14,7 +17,6 @@ import qualified GitNetis.Git                as G
 import           GitNetis.Resource.Bitbucket as RB
 import           GitNetis.Resource.JIRA      as RJ
 import           Options.Applicative
-import           Text.Printf
 
 -----------
 -- Commands
@@ -168,7 +170,7 @@ issueWorkonParser = strArgument
 exec :: Command -> IO ()
 exec (SetupCommand cmd) = execSetupCommand cmd
 exec cmd = do
-  setGlobalEnv
+  loadGlobalEnv
   case cmd of
     BitbucketCommand cmd -> execBitbucketCommand cmd
     JIRACommand cmd      -> execJIRACommand cmd
@@ -199,7 +201,7 @@ execSetupCommand cmd = case cmd of
                      }
      AB.printProjects
      project <- prompt "Select a project to work with: "
-     inform "GG: %s" project
+     inform [i|GG: #{project}|]
 
 -------------------------
 -- Exec Bitbucket command
@@ -223,7 +225,7 @@ execJIRACommand cmd = case cmd of
       where
         renderProject :: RJ.Project -> String
         renderProject RJ.Project{..} =
-          printf "%s\t%s" projectKey projectName
+          [i|#{projectKey}\t#{projectName}|]
   JIRAWorkonProject key -> setActiveJIRAProject key
 
 
@@ -247,7 +249,7 @@ execIssueCommand cmd = case cmd of
       where
         renderIssue :: RJ.Issue -> String
         renderIssue RJ.Issue{..} =
-          printf "%s\t%s\t%s\t%s" issueKey issueStatus (fromMaybe "\t" issueAssignee) issueSummary
+          [i|#{issueKey}\t#{issueStatus}\t#{fromMaybe "\t" issueAssignee}\t#{issueSummary}|]
   IssueWorkon key ->
     workonIssue key
 
