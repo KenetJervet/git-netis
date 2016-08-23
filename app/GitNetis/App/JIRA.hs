@@ -1,16 +1,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 
 module GitNetis.App.JIRA where
 
 import           Control.Monad
 import           Control.Monad.Catch
-import           Data.ByteString.Lazy   (ByteString)
+import           Data.ByteString.Lazy    (ByteString)
+import           Data.String.Interpolate
 import           GitNetis.App.Env
 import           GitNetis.App.Util
 import           GitNetis.Git
 import           GitNetis.Resource
 import           GitNetis.Resource.JIRA
-import           Text.Printf
 
 data JIRAError = InvalidJIRAProject String
                | InvalidJIRAIssue String
@@ -33,7 +34,7 @@ ensureJIRAProjectExists :: String  -- ^ project key
 ensureJIRAProjectExists key = do
   res <- jiraRequestJSON GetProjectList
   unless (key `elem` (map projectKey (projects res))) $
-    throwM $ InvalidJIRAProject (printf "Project does not exist: %s" key)
+    throwM $ InvalidJIRAProject [i|Project does not exist: #{key}|]
 
 setActiveJIRAProject :: String  -- ^ project key
                      -> IO ()
@@ -43,15 +44,15 @@ setActiveJIRAProject key = do
 
 ensureIssueExists :: String  -- ^ issue key
                   -> IO ()
-ensureIssueExists key = do
+ensureIssueExists key =
   void $ jiraRequestJSON GetIssue{ getIssueKey = key } `catch` handler
   where
-    handler NotFound = do
-      throwM $ InvalidJIRAIssue (printf "Issue does not exist: %s" key)
+    handler NotFound =
+      throwM $ InvalidJIRAIssue [i|Issue does not exist: #{key}|]
 
 workonIssue :: String  -- ^ issue key
             -> IO ()
 workonIssue key = do
   ensureIssueExists key
   void $ jiraRequest WorkonIssue { workonIssueKey = key }
-  inform $ printf "You are now working on %s.\n" key
+  inform [i|You are now working on #{key}.|]

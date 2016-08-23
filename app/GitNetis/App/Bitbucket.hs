@@ -1,18 +1,19 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module GitNetis.App.Bitbucket where
 
 import           Control.Monad
 import           Control.Monad.Catch
 import           Data.ByteString.Lazy        (ByteString)
+import           Data.String.Interpolate
 import           GitNetis.App.Env
 import           GitNetis.App.Internal
 import           GitNetis.App.Util
 import           GitNetis.Git
 import           GitNetis.Resource
 import           GitNetis.Resource.Bitbucket
-import           Text.Printf
 
 data BitbucketError = InvalidBitbucketProject String
                     deriving Show
@@ -36,7 +37,7 @@ ensureBitbucketProjectExists :: String  -- ^ project key
 ensureBitbucketProjectExists key = do
   res <- bitbucketRequestJSON GetProjectList
   unless (key `elem` (map projectKey (projects res))) $
-    throwM $ InvalidBitbucketProject (printf "Project does not exist: %s" key)
+    throwM $ InvalidBitbucketProject [i|Project does not exist: #{key}|]
 setActiveBitbucketProject :: String  -- ^ project key
                           -> IO ()
 setActiveBitbucketProject key = do
@@ -57,7 +58,8 @@ class DefaultRenderer obj where
   def :: Renderer obj
 
 instance DefaultRenderer Project where
-  def Project{..} = printf "%s\t%s" projectKey projectDescription
+  def Project{..} =
+    [i|#{projectKey}\t#{projectDescription}|]
 
 instance DefaultRenderer ProjectList where
   def ProjectList{..} = renderWithSeqNum projects def

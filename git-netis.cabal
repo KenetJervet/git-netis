@@ -29,6 +29,7 @@ library
                      , exceptions >= 0.8
                      , http-client >= 0.4
                      , http-types >= 0.9
+                     , interpolate >= 0.1
                      , lens >= 4.13
                      , lens-aeson >= 1.0
                      , mtl >= 2.2

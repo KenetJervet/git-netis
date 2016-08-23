@@ -1,18 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeFamilies   #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module GitNetis.Git where
 
 import           Control.Lens
 import           Control.Monad.Catch
 import           Data.Either
+import           Data.String.Interpolate
 import           System.Exit
 import           System.IO
 import           System.Process
-import           Text.Printf
 
 gitExecutableName :: String
 gitExecutableName = "git"
@@ -99,18 +100,18 @@ instance Command (GetConfigItem item) where
     (exitCode, stdout, _) <- exec_ ["config", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return $ coerceFrom item (init stdout)  -- Remove trailing \n
-      ExitFailure _ -> throwM $ GitConfigError $ printf "Dunno what happened. Maybe key `%s` was not found?" (key item)
+      ExitFailure _ -> throwM $ GitConfigError [i|Dunno what happened. Maybe key #{key item} was not found?|]
 
 instance Command (SetConfigItem configItem) where
   run _ (SetConfigItem item value) = do
     (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key item, coerceTo item value]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigError $ "Really dunno what happened."
 
 instance Command (UnsetConfigItem configItem) where
   run _ (UnsetConfigItem item) = do
     (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError $ printf "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigError $ "Really dunno what happened."
