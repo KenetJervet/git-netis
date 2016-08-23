@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module GitNetis.App.Util where
 
@@ -13,7 +14,7 @@ import           GitNetis.App.Env
 import           GitNetis.Resource
 import           GitNetis.Resource.Auth as A
 import           System.IO
-import           Text.Printf
+import           Data.String.Interpolate
 
 baseRequest_ :: (Resource method res) => res
              -> (Env -> String)
@@ -35,11 +36,17 @@ requestJSON :: (JSONResource json method res) => res -> (Env -> String) -> IO js
 requestJSON res rootGetter = baseRequest_ res rootGetter getJSON
 
 
-inform :: PrintfType r => String -> r
-inform s = printf (s ++ "\n")
+inform :: String -> IO ()
+inform = putStrLn
 
 prompt :: String -> IO String  -- ^ message
-prompt msg = printf msg >> putChar ' ' >> hFlush stdout >> getLine
+prompt msg = putStr msg >> putChar ' ' >> hFlush stdout >> getLine
+
+defaultPrompt :: String -> String -> IO String
+defaultPrompt msg defaultValue = do
+  putStr [i|#{msg} [#{defaultValue}]: |]
+  val <- getLine
+  return $ if val == "" then defaultValue else val
 
 -- OK
 promptPassword :: String  -- ^ message
@@ -48,7 +55,7 @@ promptPassword msg = do
   putStr msg
   putChar ' '
   hFlush stdout
-  bracket open close (\_ -> getLine)
+  bracket open close (const getLine)
   where
     open = do
       b <- hGetBuffering stdin
@@ -61,9 +68,9 @@ promptPassword msg = do
       hSetEcho      stdin e
 
 renderWithSeqNum :: forall a. Show a => [a] -> (a -> String) -> String
-renderWithSeqNum objs showFunc = do
+renderWithSeqNum objs showFunc =
   join $ zipWith render objs [1..]
   where
     render :: a -> Int -> String
     render obj seqNum =
-      printf "[%d]\t%s\n" seqNum (showFunc obj)
+      [i|[#{seqNum}]\t#{showFunc obj}|]

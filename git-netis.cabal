@@ -53,6 +53,7 @@ executable git-netis
                      , git-netis
                      , bytestring >= 0.10
                      , exceptions >= 0.8
+                     , interpolate >= 0.1
                      , optparse-applicative >= 0.12
                      , mtl >= 2.2
                      , text >= 1.2

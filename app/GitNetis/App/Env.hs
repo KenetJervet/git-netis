@@ -14,8 +14,8 @@ data Env = Env { username      :: String
 globalEnv :: IORef Env
 globalEnv = unsafePerformIO $ newIORef Env{}
 
-setGlobalEnv :: IO Env
-setGlobalEnv = do
+loadGlobalEnv :: IO Env
+loadGlobalEnv = do
   username <- run GitEnv (GetConfigItem UserName)
   password <- run GitEnv (GetConfigItem Password)
   bitbucketRoot <- run GitEnv (GetConfigItem BitbucketRoot)
@@ -27,3 +27,6 @@ setGlobalEnv = do
                 }
   writeIORef globalEnv env
   return env
+
+setGlobalEnv :: Env -> IO Env
+setGlobalEnv env = writeIORef globalEnv env >> return env

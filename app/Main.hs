@@ -1,4 +1,5 @@
 {-# LANGUAGE MonadComprehensions #-}
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE RecordWildCards     #-}
 
 module Main where
@@ -187,6 +188,15 @@ execSetupCommand cmd = case cmd of
      run GitEnv (SetConfigItem Password password)
      inform ""
      inform "Your username and password have been saved."
+     jiraRoot <- prompt "JIRA root URL (e.g. http://jira.dev.netis.com.cn:8080/rest/api/2/):"
+     bitbucketRoot <- prompt "Bitbucket root URL (e.g. https://git.dev.netis.com/rest/api/1.0/):"
+     run GitEnv (SetConfigItem JIRARoot jiraRoot)
+     run GitEnv (SetConfigItem BitbucketRoot bitbucketRoot)
+     setGlobalEnv Env{ username
+                     , password
+                     , jiraRoot
+                     , bitbucketRoot
+                     }
      AB.printProjects
      project <- prompt "Select a project to work with: "
      inform "GG: %s" project
@@ -237,8 +247,8 @@ execIssueCommand cmd = case cmd of
       where
         renderIssue :: RJ.Issue -> String
         renderIssue RJ.Issue{..} =
-          printf "%s\t%s\t%s\t%s" issueKey issueStatus (maybe "\t" id issueAssignee) issueSummary
-  IssueWorkon key -> do
+          printf "%s\t%s\t%s\t%s" issueKey issueStatus (fromMaybe "\t" issueAssignee) issueSummary
+  IssueWorkon key ->
     workonIssue key
 
 main :: IO ()
