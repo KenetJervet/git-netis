@@ -78,6 +78,9 @@ workonIssue :: String  -- ^ issue key
             -> IO ()
 workonIssue key = do
   ensureIssueExists key
-  void $ jiraRequest WorkonIssue { workonIssueKey = key }
+  void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
   run GitEnv (SetConfigItem WorkingOnIssue key)
   inform [i|You are now working on #{key}.|]
+  where
+    onTransitionFailed _ =
+      inform "State transition failed. It could be that the issue is already in development. In this case You can safely ignore this message."
