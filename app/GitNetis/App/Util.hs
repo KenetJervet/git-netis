@@ -1,20 +1,24 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE QuasiQuotes               #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 
 module GitNetis.App.Util where
 
 import           Control.Exception
 import           Control.Monad
-import           Data.ByteString.Lazy   (ByteString)
+import           Data.ByteString.Lazy    (ByteString)
 import           Data.IORef
+import           Data.List
+import           Data.String.Interpolate
 import           GitNetis.App
 import           GitNetis.App.Env
 import           GitNetis.Resource
-import           GitNetis.Resource.Auth as A
+import           GitNetis.Resource.Auth  as A
 import           System.IO
-import           Data.String.Interpolate
+import           Text.PrettyPrint.Boxes
+import           Text.Printf
 
 baseRequest_ :: (Resource method res) => res
              -> (Env -> String)
@@ -67,10 +71,11 @@ promptPassword msg = do
       hSetBuffering stdin b
       hSetEcho      stdin e
 
-renderWithSeqNum :: forall a. Show a => [a] -> (a -> String) -> String
+renderWithSeqNum :: [a] -> (a -> [String]) -> String
 renderWithSeqNum objs showFunc =
-  join $ zipWith render objs [1..]
-  where
-    render :: a -> Int -> String
-    render obj seqNum =
-      [i|[#{seqNum}]\t#{showFunc obj}\n|]
+  renderTable $ zipWith (flip (:)) (map showFunc objs) (map (printf "[%s]". show) [1..])
+
+data Showable = forall a. Show a => Showable a
+
+renderTable :: [[String]] -> String
+renderTable = render . punctuateH left (char ' ') . map (vcat left . map text) . transpose

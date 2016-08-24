@@ -26,7 +26,7 @@ exec args = readCreateProcessWithExitCode (proc gitExecutableName args)
 exec_ = flip exec mempty
 
 data Error = GitConfigError String
-           | IDon'tCare
+           | IDontCare
            deriving Show
 
 instance Exception Error
@@ -107,11 +107,11 @@ instance Command (SetConfigItem configItem) where
     (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key item, coerceTo item value]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError $ "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
 
 instance Command (UnsetConfigItem configItem) where
   run _ (UnsetConfigItem item) = do
     (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError $ "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."

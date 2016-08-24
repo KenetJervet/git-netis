@@ -10,7 +10,7 @@
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving     #-}
 
 module GitNetis.Resource ( RequestOptions (..)
                          , ResourceRequestError (..)
@@ -49,7 +49,7 @@ applyOptions RequestOptions{ authOptions = ao } = applyAuth ao
 
 data ResourceRequestError = AuthFailed
                           | NotFound
-                          | forall a. Show a => IDon'tCare a
+                          | forall a. Show a => IDontCare a
 
 deriving instance Show ResourceRequestError
 
@@ -106,7 +106,7 @@ class HttpMethod method => Resource method res | res -> method where
           case s ^. statusCode of
             sc | sc == 401 -> throwM AuthFailed
                | sc == 404 -> throwM NotFound
-               | otherwise -> throwM $ IDon'tCare e
+               | otherwise -> throwM $ IDontCare e
         handler e = error (show e)
   get :: RequestOptions
       -> res

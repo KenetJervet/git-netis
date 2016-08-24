@@ -45,25 +45,6 @@ setActiveBitbucketProject key = do
   run GitEnv (SetConfigItem ActiveBitbucketProject key)
 
 
-------------
--- Renderers
-------------
-
-type Renderer obj = obj -> String
-
-render :: Renderer obj -> obj -> String
-render f = f
-
-class DefaultRenderer obj where
-  def :: Renderer obj
-
-instance DefaultRenderer Project where
-  def Project{..} =
-    [i|#{projectKey}\t#{projectDescription}|]
-
-instance DefaultRenderer ProjectList where
-  def ProjectList{..} = renderWithSeqNum projects def
-
 
 -----------------------------
 -- Project bitbucket projects
@@ -72,4 +53,6 @@ instance DefaultRenderer ProjectList where
 printProjects :: IO ()
 printProjects = do
   res <- bitbucketRequestJSON GetProjectList
-  putStr $ renderWithSeqNum (projects res) (render def)
+  putStrLn $ renderWithSeqNum (projects res) renderProject
+  where
+    renderProject Project{..} = [projectKey, projectDescription]

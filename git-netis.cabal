@@ -52,6 +52,7 @@ executable git-netis
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , git-netis
+                     , boxes >= 0.1
                      , bytestring >= 0.10
                      , exceptions >= 0.8
                      , interpolate >= 0.1

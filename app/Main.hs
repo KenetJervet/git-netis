@@ -223,9 +223,8 @@ execJIRACommand cmd = case cmd of
     res <- jiraRequestJSON RJ.GetProjectList
     putStr $ renderWithSeqNum (RJ.projects res) renderProject
       where
-        renderProject :: RJ.Project -> String
         renderProject RJ.Project{..} =
-          [i|#{projectKey}\t#{projectName}|]
+          [projectKey, projectName]
   JIRAWorkonProject key -> setActiveJIRAProject key
 
 
@@ -247,9 +246,8 @@ execIssueCommand cmd = case cmd of
                                           }
     putStr $ renderWithSeqNum (RJ.issues res) renderIssue
       where
-        renderIssue :: RJ.Issue -> String
         renderIssue RJ.Issue{..} =
-          [i|#{issueKey}\t#{issueStatus}\t#{fromMaybe "\t" issueAssignee}\t#{issueSummary}|]
+          [issueKey, issueStatus, fromMaybe "\t" issueAssignee, issueSummary]
   IssueWorkon key ->
     workonIssue key
 
