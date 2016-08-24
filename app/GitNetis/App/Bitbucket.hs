@@ -45,14 +45,15 @@ setActiveBitbucketProject key = do
   run GitEnv (SetConfigItem ActiveBitbucketProject key)
 
 
-
 -----------------------------
 -- Project bitbucket projects
 -----------------------------
 
-printProjects :: IO ()
-printProjects = do
-  res <- bitbucketRequestJSON GetProjectList
-  putStrLn $ renderWithSeqNum (projects res) renderProject
+printProjects :: [Project] -> IO ()
+printProjects projects = do
+  activeProject <- getWithDefault "" ActiveBitbucketProject
+  putStrLn $
+    renderTableWithHighlightedItem projects renderProject $
+    (== activeProject) . projectKey
   where
     renderProject Project{..} = [projectKey, projectDescription]

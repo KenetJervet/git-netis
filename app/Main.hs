@@ -2,9 +2,11 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
+import           Control.Monad.Catch
 import           Data.Maybe
 import           Data.String.Interpolate
 import           Data.Text                   as T
@@ -199,7 +201,8 @@ execSetupCommand cmd = case cmd of
                      , jiraRoot
                      , bitbucketRoot
                      }
-     AB.printProjects
+     res <- bitbucketRequestJSON RB.GetProjectList
+     AB.printProjects (RB.projects res)
      project <- prompt "Select a project to work with: "
      inform [i|GG: #{project}|]
 
@@ -209,7 +212,9 @@ execSetupCommand cmd = case cmd of
 
 execBitbucketCommand :: BitbucketCommand -> IO ()
 execBitbucketCommand cmd = case cmd of
-  BitbucketListProjects      -> AB.printProjects
+  BitbucketListProjects      -> do
+    res <- bitbucketRequestJSON RB.GetProjectList
+    AB.printProjects $ RB.projects res
   BitbucketWorkonProject key -> setActiveBitbucketProject key
 
 
@@ -219,12 +224,9 @@ execBitbucketCommand cmd = case cmd of
 
 execJIRACommand :: JIRACommand -> IO ()
 execJIRACommand cmd = case cmd of
-  JIRAListProjects -> do
+  JIRAListProjects      -> do
     res <- jiraRequestJSON RJ.GetProjectList
-    putStr $ renderWithSeqNum (RJ.projects res) renderProject
-      where
-        renderProject RJ.Project{..} =
-          [projectKey, projectName]
+    AJ.printProjects $ RJ.projects res
   JIRAWorkonProject key -> setActiveJIRAProject key
 
 
@@ -244,19 +246,17 @@ execIssueCommand cmd = case cmd of
                                           , getIssueListStatus = status
                                           , getIssueListOnlyOpenSprints = True
                                           }
-    putStr $ renderWithSeqNum (RJ.issues res) renderIssue
-      where
-        renderIssue RJ.Issue{..} =
-          [issueKey, issueStatus, fromMaybe "\t" issueAssignee, issueSummary]
+    AJ.printIssues $ RJ.issues res
   IssueWorkon key ->
     workonIssue key
 
 main :: IO ()
 main = do
   cmd <- execParser parser
-  exec cmd
+  exec cmd `catchAll` mainErrorHandler
   where
     parser = info (helper <*> argParser)
       ( fullDesc
         <> progDesc "A Netis internal Git utility that integrates with JIRA and Bitbucket"
       )
+    mainErrorHandler = print

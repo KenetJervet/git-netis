@@ -10,6 +10,7 @@ module GitNetis.Git where
 import           Control.Lens
 import           Control.Monad.Catch
 import           Data.Either
+import           Data.Maybe
 import           Data.String.Interpolate
 import           System.Exit
 import           System.IO
@@ -58,6 +59,7 @@ data BitbucketRoot = BitbucketRoot
 data JIRARoot = JIRARoot
 data ActiveJIRAProject = ActiveJIRAProject
 data ActiveBitbucketProject = ActiveBitbucketProject
+data WorkingOnIssue = WorkingOnIssue
 
 instance ConfigItem UserName where
   key _ = "username"
@@ -76,6 +78,9 @@ instance ConfigItem ActiveJIRAProject where
 
 instance ConfigItem ActiveBitbucketProject where
   key _ = "activeBitbucketProject"
+
+instance ConfigItem WorkingOnIssue where
+  key _ = "workingOnIssue"
 
 
 data GetConfigItem configItem where
@@ -115,3 +120,12 @@ instance Command (UnsetConfigItem configItem) where
     case exitCode of
       ExitSuccess   -> return ()
       ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+
+getMaybe :: ConfigItem item => item -> IO (Maybe (ValueType item))
+getMaybe item = do
+  val <- run GitEnv (GetConfigItem item)
+  return $ Just val
+  `catch` \(GitConfigError ex) -> return Nothing
+
+getWithDefault :: ConfigItem item => ValueType item -> item -> IO (ValueType item)
+getWithDefault def item = fromMaybe def <$> getMaybe item

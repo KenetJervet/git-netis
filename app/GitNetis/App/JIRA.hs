@@ -1,11 +1,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module GitNetis.App.JIRA where
 
 import           Control.Monad
 import           Control.Monad.Catch
 import           Data.ByteString.Lazy    (ByteString)
+import           Data.Maybe
 import           Data.String.Interpolate
 import           GitNetis.App.Env
 import           GitNetis.App.Util
@@ -50,9 +52,32 @@ ensureIssueExists key =
     handler NotFound =
       throwM $ InvalidJIRAIssue [i|Issue does not exist: #{key}|]
 
+printProjects :: [Project] -> IO ()
+printProjects projects = do
+  activeProject <- getWithDefault "" ActiveJIRAProject
+  putStrLn $
+    renderTableWithHighlightedItem projects renderProject $
+    (== activeProject) . projectKey
+  where
+    renderProject Project{..} = [projectKey, projectName]
+
+printIssues :: [Issue] -> IO ()
+printIssues issues = do
+  workingOnIssue <- getWithDefault "" WorkingOnIssue
+  putStrLn $
+    renderTableWithHighlightedItem issues renderIssue $
+    (== workingOnIssue) . issueKey
+  where
+    renderIssue Issue{..} = [ issueKey
+                            , issueStatus
+                            , fromMaybe "" issueAssignee
+                            , issueSummary
+                            ]
+
 workonIssue :: String  -- ^ issue key
             -> IO ()
 workonIssue key = do
   ensureIssueExists key
   void $ jiraRequest WorkonIssue { workonIssueKey = key }
+  run GitEnv (SetConfigItem WorkingOnIssue key)
   inform [i|You are now working on #{key}.|]

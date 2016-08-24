@@ -73,9 +73,25 @@ promptPassword msg = do
 
 renderWithSeqNum :: [a] -> (a -> [String]) -> String
 renderWithSeqNum objs showFunc =
-  renderTable $ zipWith (flip (:)) (map showFunc objs) (map (printf "[%s]". show) [1..])
+  renderTable $ zipWith (:) (map (printf "[%s]". show) [1..]) (map showFunc objs)
 
 data Showable = forall a. Show a => Showable a
 
 renderTable :: [[String]] -> String
-renderTable = render . punctuateH left (char ' ') . map (vcat left . map text) . transpose
+renderTable = render
+              . punctuateH left (char ' ')
+              . map (vcat left . map text)
+              . transpose
+
+renderTableWithHighlightedItem :: [a]  -- ^ items
+                               -> (a -> [String])  -- ^ item renderer
+                               -> (a -> Bool)  -- ^ predicate. True = highlight
+                               -> String
+renderTableWithHighlightedItem items showFunc pred =
+  renderTable (prependHighlighter items $ prependSeqNum $ showAll items)
+   where
+     showAll = map showFunc
+     prependSeqNum =
+       zipWith (:) (map (printf "[%s]". show) [1..])
+     prependHighlighter =
+       zipWith $ (:) . (\obj -> if pred obj then "*" else "")
