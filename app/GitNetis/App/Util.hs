@@ -71,10 +71,6 @@ promptPassword msg = do
       hSetBuffering stdin b
       hSetEcho      stdin e
 
-renderWithSeqNum :: [a] -> (a -> [String]) -> String
-renderWithSeqNum objs showFunc =
-  renderTable $ zipWith (:) (map (printf "[%s]". show) [1..]) (map showFunc objs)
-
 data Showable = forall a. Show a => Showable a
 
 renderTable :: [[String]] -> String
@@ -94,4 +90,4 @@ renderTableWithHighlightedItem items showFunc pred =
      prependSeqNum =
        zipWith (:) (map (printf "[%s]". show) [1..])
      prependHighlighter =
-       zipWith $ (:) . (\obj -> if pred obj then "*" else "")
+       zipWith $ (:) . (\obj -> if pred obj then ">" else "")
