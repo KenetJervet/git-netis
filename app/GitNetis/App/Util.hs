@@ -119,6 +119,14 @@ promptPassword :: String  -- ^ message
                -> IO String
 promptPassword msg = basePrompt msg Password
 
+validatedPromptPassword :: String  -- ^ message
+                        -> (String -> IO Bool)  -- ^ predicate
+                        -> IO String
+validatedPromptPassword msg pred = do
+  val <- promptPassword msg
+  result <- pred val
+  if result then return val else validatedPromptPassword msg pred
+
 data Showable = forall a. Show a => Showable a
 
 renderTable :: [[String]] -> String
