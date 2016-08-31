@@ -1,11 +1,9 @@
 {-# LANGUAGE DeriveAnyClass        #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE StandaloneDeriving    #-}
 
 module GitNetis.Resource.JIRA where
 
@@ -14,16 +12,19 @@ import           Control.Monad
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.Aeson.QQ
-import qualified Data.HashMap.Strict as H
+import qualified Data.HashMap.Strict             as H
 import           Data.IORef
 import           Data.List
 import           Data.Maybe
-import qualified Data.Vector         as V
+import qualified Data.Vector                     as V
 import           GHC.Generics
 import           GitNetis.Git
 import           GitNetis.Resource
 import           GitNetis.Util
+import           Text.ParserCombinators.ReadP    as RP
+import           Text.ParserCombinators.ReadPrec as RPrec hiding ((<++))
 import           Text.Printf
+import           Text.Read                       hiding ((<++))
 
 class Resource method res => JIRAResource method res
 
@@ -37,9 +38,9 @@ data JQLQuery = JQLEq String String
 
 jqlQueryToString :: JQLQuery -> String
 jqlQueryToString q = case q of
-  JQLEq k v -> printf "%s=%s" k v
+  JQLEq k v    -> printf "%s=%s" k v
   JQLIsEmpty k -> printf "%s+is+empty" k
-  JQLIn k v -> printf "%s+in+%s" k v
+  JQLIn k v    -> printf "%s+in+%s" k v
 
 assembleJQL :: [Maybe JQLQuery] -> String
 assembleJQL queries =
@@ -49,7 +50,7 @@ assembleJQL queries =
   where
     assembleKVP (k, v) =
       case v of
-        Nothing -> printf "%s+is+empty" k
+        Nothing   -> printf "%s+is+empty" k
         (Just jv) -> printf "%s=%s" k jv
 
 -------------
@@ -63,10 +64,28 @@ data Project = Project { projectKey  :: String
 newtype ProjectList = ProjectList { projects :: [Project]
                                   } deriving Show
 
+data IssueType = Story
+               | Task
+               | Bug
+               | Other String
+               deriving (Eq, Show)
+
+instance Read IssueType where
+  readPrec = lift p
+    where
+      p = (string "Story" >> return Story)
+          <++
+          (string "Task" >> return Task)
+          <++
+          (string "Bug" >> return Bug)
+          <++
+          (Other <$> munch (const True))
+
 data Issue = Issue { issueKey      :: String
                    , issueSummary  :: String
                    , issueAssignee :: Maybe String
                    , issueStatus   :: String
+                   , issueType     :: IssueType
                    } deriving Show
 
 data IssueList = IssueList { issues :: [Issue]
@@ -164,12 +183,14 @@ instance FromJSON Issue where
     fields <- obj .: "fields"
     summary <- fields .: "summary"
     assignee <- fields .:? "assignee"
-    assigneeName <- (if isNothing assignee then H.empty else fromJust assignee) .:? "name"
+    assigneeName <- fromMaybe H.empty assignee .:? "name"
     status <- (fields .: "status") >>= (.: "name")
+    issueType <- (fields .: "issuetype") >>= (.: "name")
     return Issue{ issueKey = key
                 , issueSummary = summary
                 , issueAssignee = assigneeName
                 , issueStatus = status
+                , issueType = read issueType
                 }
 
 instance FromJSON IssueList where

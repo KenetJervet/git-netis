@@ -45,13 +45,17 @@ setActiveJIRAProject key = do
   ensureJIRAProjectExists key
   run GitEnv (SetConfigItem ActiveJIRAProject key)
 
-ensureIssueExists :: String  -- ^ issue key
-                  -> IO ()
-ensureIssueExists key =
-  void $ jiraRequestJSON GetIssue{ getIssueKey = key } `catch` handler
+getIssue :: String  -- ^ issue key
+         -> IO Issue
+getIssue key =
+  jiraRequestJSON GetIssue{ getIssueKey = key } `catch` handler
   where
     handler NotFound =
       throwM $ InvalidJIRAIssue [i|Issue does not exist: #{key}|]
+
+ensureIssueExists :: String  -- ^ issue key
+                  -> IO ()
+ensureIssueExists = void . getIssue
 
 printProjects :: [Project] -> IO ()
 printProjects projects = do
@@ -78,15 +82,18 @@ printIssues issues = do
 workonIssue :: String  -- ^ issue key
              -> IO ()
 workonIssue key = flip runContT return $ callCC $ \ret -> do
-  lift $ ensureIssueExists key
+  issue <- lift $ getIssue key
   workingOnIssue <- lift $ getMaybe WorkingOnIssue
   when (isJust workingOnIssue) $ do
     let issueKey = fromJust workingOnIssue
-    lift $ inform [i|You are already working on #{key}.|]
-    ret ()
-  lift $ void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
-  lift $ run GitEnv (SetConfigItem WorkingOnIssue key)
-  lift $ inform [i|You are now working on #{key}.|]
+    when (issueKey == key) $ do
+      lift $ inform [i|You are already working on #{key}.|]
+      ret ()
+  lift $ do
+    void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
+    run GitEnv (SwitchBranch "GG")
+    run GitEnv (SetConfigItem WorkingOnIssue key)
+    inform [i|You are now working on #{key}.|]
   where
     onTransitionFailed _ =
-      inform "State transition failed. It could be that the issue is already in development. In this case You can safely ignore this message."
+      inform "State transition failed. It could be that the issue is already in development. In this case you can safely ignore this message."

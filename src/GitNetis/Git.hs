@@ -1,13 +1,15 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DefaultSignatures   #-}
-{-# LANGUAGE DeriveAnyClass      #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE DefaultSignatures        #-}
+{-# LANGUAGE DeriveAnyClass           #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE GADTs                    #-}
+{-# LANGUAGE QuasiQuotes              #-}
+{-# LANGUAGE RecordWildCards          #-}
+{-# LANGUAGE TypeFamilies             #-}
 
 module GitNetis.Git where
 
 import           Control.Lens
+import           Control.Monad
 import           Control.Monad.Catch
 import           Data.Either
 import           Data.Maybe
@@ -38,6 +40,11 @@ class Command cmd where
   type DataType cmd :: *
   type DataType cmd = ()
   run :: GitEnv -> cmd -> IO (DataType cmd)
+
+
+----------
+-- Configs
+----------
 
 gitConfigPrefix :: String
 gitConfigPrefix = "git-netis."
@@ -129,3 +136,36 @@ getMaybe item = do
 
 getWithDefault :: ConfigItem item => item -> ValueType item -> IO (ValueType item)
 getWithDefault item def = fromMaybe def <$> getMaybe item
+
+
+------------
+-- Branching
+------------
+
+data SwitchBranch = SwitchBranch String
+
+instance Command SwitchBranch where
+  run _ (SwitchBranch branchName) = do
+    (exitCode, _, _) <- exec_ ["checkout", branchName]
+    case exitCode of
+      ExitSuccess   -> return ()
+      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+
+data CreateBranch = CreateBranch { name         :: String
+                                 , startFrom    :: Maybe String
+                                 , createRemote :: Bool
+                                 }
+
+instance Command CreateBranch where
+  run _ CreateBranch{..} = do
+    (exitCode, _, _) <- exec_ $ join [ ["checkout", "-b", name],
+                                       catMaybes [startFrom]
+                                     ]
+    case exitCode of
+      ExitSuccess -> return ()
+      ExitFailure 128 -> throwM $ GitConfigError [i|Branch #{name}] already exists. |]
+      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+    (exitCode, _, _) <- exec_ ["push", "--set-upstream", "origin", name]
+    case exitCode of
+      ExitSuccess -> return ()
+      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."

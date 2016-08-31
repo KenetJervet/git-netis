@@ -41,9 +41,19 @@ authOKRequestOptions = let
 
 tests :: TestTree
 tests = testGroup "JIRA tests"
-  [ testAuth
+  [ testDataDecls
+  , testAuth
   , testGetProjectList
   , testGetIssueList
+  ]
+
+testDataDecls :: TestTree
+testDataDecls = testGroup "Data decl tests"
+  [ testCase "Read instance of IssueType" $ do
+      Story @=? read "Story"
+      Task @=? read "Task"
+      Bug @=? read "Bug"
+      Other "Foo" @=? read "Foo"
   ]
 
 testAuth :: TestTree
