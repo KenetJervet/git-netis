@@ -89,7 +89,7 @@ promptWithDefault :: String  -- ^ message
                   -> String  -- ^ default
                   -> IO String
 promptWithDefault msg def = do
-  val <- basePrompt [i|#{msg} [#{def}]: |] PlainText
+  val <- basePrompt [i|#{msg} [#{def}]:|] PlainText
   return $ if val == "" then def else val
 
 validatedPromptWithDefault :: String  -- ^ message
