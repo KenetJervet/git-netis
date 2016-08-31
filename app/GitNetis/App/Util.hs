@@ -76,7 +76,6 @@ prompt :: String  -- ^ message
        -> IO String
 prompt = flip basePrompt PlainText
 
-
 validatedPrompt :: String  -- ^ message
                 -> (String -> IO Bool)  -- ^ predicate
                 -> InputMode
@@ -125,7 +124,12 @@ validatedPromptPassword :: String  -- ^ message
 validatedPromptPassword msg pred = do
   val <- promptPassword msg
   result <- pred val
+  inform ""
   if result then return val else validatedPromptPassword msg pred
+
+-- Validation helpers
+required :: String -> IO Bool
+required = return . not . null
 
 data Showable = forall a. Show a => Showable a
 

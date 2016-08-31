@@ -127,5 +127,5 @@ getMaybe item = do
   return $ Just val
   `catch` \(GitConfigError ex) -> return Nothing
 
-getWithDefault :: ConfigItem item => ValueType item -> item -> IO (ValueType item)
-getWithDefault def item = fromMaybe def <$> getMaybe item
+getWithDefault :: ConfigItem item => item -> ValueType item -> IO (ValueType item)
+getWithDefault item def = fromMaybe def <$> getMaybe item

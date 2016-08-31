@@ -9,7 +9,7 @@ module Main where
 import           Control.Monad.Catch
 import           Data.Maybe
 import           Data.String.Interpolate
-import           Data.Text                   as T
+import qualified Data.Text                   as T
 import           GitNetis.App.Bitbucket      as AB
 import           GitNetis.App.Env
 import           GitNetis.App.JIRA           as AJ
@@ -186,16 +186,18 @@ exec cmd = do
 execSetupCommand :: SetupCommand -> IO ()
 execSetupCommand cmd = case cmd of
   Setup{..} -> do
-    savedUserName <- getWithDefault "" UserName
-    savedPassword <- getWithDefault "" Password
-    username <- promptWithDefault "Your user name:" savedUserName
-    password <- promptPassword "Your password:"
+    savedUserName <- getWithDefault UserName ""
+    savedPassword <- getWithDefault Password ""
+    username <- validatedPromptWithDefault "Your user name:" savedUserName (return . not . null)
+    password <- validatedPromptPassword "Your password:" (return . not . null)
     run GitEnv (SetConfigItem UserName username)
     run GitEnv (SetConfigItem Password password)
     inform ""
     inform "Your username and password have been saved."
-    jiraRoot <- promptWithDefault "JIRA root URL" "http://jira.dev.netis.com.cn:8080/rest/api/2/):"
-    bitbucketRoot <- promptWithDefault "Bitbucket root URL" "https://git.dev.netis.com/rest/api/1.0/):"
+    savedJiraRoot <- getWithDefault JIRARoot "http://jira.dev.netis.com.cn:8080/rest/api/2/"
+    savedBitbucketRoot <- getWithDefault BitbucketRoot "https://git.dev.netis.com/rest/api/1.0/"
+    jiraRoot <- promptWithDefault "JIRA root URL" savedJiraRoot
+    bitbucketRoot <- promptWithDefault "Bitbucket root URL" savedBitbucketRoot
     run GitEnv (SetConfigItem JIRARoot jiraRoot)
     run GitEnv (SetConfigItem BitbucketRoot bitbucketRoot)
     setGlobalEnv Env{ username

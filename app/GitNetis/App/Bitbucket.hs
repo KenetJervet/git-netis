@@ -36,7 +36,7 @@ ensureBitbucketProjectExists :: String  -- ^ project key
                              -> IO ()
 ensureBitbucketProjectExists key = do
   res <- bitbucketRequestJSON GetProjectList
-  unless (key `elem` (map projectKey (projects res))) $
+  unless (key `elem` map projectKey (projects res)) $
     throwM $ InvalidBitbucketProject [i|Project does not exist: #{key}|]
 setActiveBitbucketProject :: String  -- ^ project key
                           -> IO ()
@@ -51,7 +51,7 @@ setActiveBitbucketProject key = do
 
 printProjects :: [Project] -> IO ()
 printProjects projects = do
-  activeProject <- getWithDefault "" ActiveBitbucketProject
+  activeProject <- getWithDefault ActiveBitbucketProject ""
   putStrLn $
     renderTableWithHighlightedItem projects renderProject $
     (== activeProject) . projectKey

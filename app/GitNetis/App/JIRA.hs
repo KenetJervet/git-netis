@@ -55,7 +55,7 @@ ensureIssueExists key =
 
 printProjects :: [Project] -> IO ()
 printProjects projects = do
-  activeProject <- getWithDefault "" ActiveJIRAProject
+  activeProject <- getWithDefault ActiveJIRAProject ""
   putStrLn $
     renderTableWithHighlightedItem projects renderProject $
     (== activeProject) . projectKey
@@ -64,7 +64,7 @@ printProjects projects = do
 
 printIssues :: [Issue] -> IO ()
 printIssues issues = do
-  workingOnIssue <- getWithDefault "" WorkingOnIssue
+  workingOnIssue <- getWithDefault WorkingOnIssue ""
   putStrLn $
     renderTableWithHighlightedItem issues renderIssue $
     (== workingOnIssue) . issueKey
