@@ -6,7 +6,8 @@ module GitNetis.App.JIRA where
 
 import           Control.Monad
 import           Control.Monad.Catch
-import           Data.ByteString.Lazy    (ByteString)
+import           Control.Monad.Cont
+import           Data.ByteString.Lazy         (ByteString)
 import           Data.Maybe
 import           Data.String.Interpolate
 import           GitNetis.App.Env

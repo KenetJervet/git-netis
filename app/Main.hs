@@ -13,7 +13,7 @@ import           Data.Text                   as T
 import           GitNetis.App.Bitbucket      as AB
 import           GitNetis.App.Env
 import           GitNetis.App.JIRA           as AJ
-import           GitNetis.App.Util
+import           GitNetis.App.Util           hiding (InputMode (..))
 import           GitNetis.Git                hiding (Command, exec)
 import qualified GitNetis.Git                as G
 import           GitNetis.Resource.Bitbucket as RB
@@ -186,25 +186,27 @@ exec cmd = do
 execSetupCommand :: SetupCommand -> IO ()
 execSetupCommand cmd = case cmd of
   Setup{..} -> do
-     username <- prompt "Your user name:"
-     password <- promptPassword "Your password:"
-     run GitEnv (SetConfigItem UserName username)
-     run GitEnv (SetConfigItem Password password)
-     inform ""
-     inform "Your username and password have been saved."
-     jiraRoot <- prompt "JIRA root URL (e.g. http://jira.dev.netis.com.cn:8080/rest/api/2/):"
-     bitbucketRoot <- prompt "Bitbucket root URL (e.g. https://git.dev.netis.com/rest/api/1.0/):"
-     run GitEnv (SetConfigItem JIRARoot jiraRoot)
-     run GitEnv (SetConfigItem BitbucketRoot bitbucketRoot)
-     setGlobalEnv Env{ username
-                     , password
-                     , jiraRoot
-                     , bitbucketRoot
-                     }
-     res <- bitbucketRequestJSON RB.GetProjectList
-     AB.printProjects (RB.projects res)
-     project <- prompt "Select a project to work with: "
-     inform [i|GG: #{project}|]
+    savedUserName <- getWithDefault "" UserName
+    savedPassword <- getWithDefault "" Password
+    username <- promptWithDefault "Your user name:" savedUserName
+    password <- promptPassword "Your password:"
+    run GitEnv (SetConfigItem UserName username)
+    run GitEnv (SetConfigItem Password password)
+    inform ""
+    inform "Your username and password have been saved."
+    jiraRoot <- promptWithDefault "JIRA root URL" "http://jira.dev.netis.com.cn:8080/rest/api/2/):"
+    bitbucketRoot <- promptWithDefault "Bitbucket root URL" "https://git.dev.netis.com/rest/api/1.0/):"
+    run GitEnv (SetConfigItem JIRARoot jiraRoot)
+    run GitEnv (SetConfigItem BitbucketRoot bitbucketRoot)
+    setGlobalEnv Env{ username
+                    , password
+                    , jiraRoot
+                    , bitbucketRoot
+                    }
+    res <- bitbucketRequestJSON RB.GetProjectList
+    AB.printProjects (RB.projects res)
+    project <- prompt "Select a project to work with: "
+    inform [i|You are now working on #{project}.|]
 
 -------------------------
 -- Exec Bitbucket command
