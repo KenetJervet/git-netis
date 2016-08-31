@@ -36,7 +36,7 @@ ensureJIRAProjectExists :: String  -- ^ project key
                         -> IO ()
 ensureJIRAProjectExists key = do
   res <- jiraRequestJSON GetProjectList
-  unless (key `elem` (map projectKey (projects res))) $
+  unless (key `elem` map projectKey (projects res)) $
     throwM $ InvalidJIRAProject [i|Project does not exist: #{key}|]
 
 setActiveJIRAProject :: String  -- ^ project key
@@ -76,12 +76,17 @@ printIssues issues = do
                             ]
 
 workonIssue :: String  -- ^ issue key
-            -> IO ()
-workonIssue key = do
-  ensureIssueExists key
-  void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
-  run GitEnv (SetConfigItem WorkingOnIssue key)
-  inform [i|You are now working on #{key}.|]
+             -> IO ()
+workonIssue key = flip runContT return $ callCC $ \ret -> do
+  lift $ ensureIssueExists key
+  workingOnIssue <- lift $ getMaybe WorkingOnIssue
+  when (isJust workingOnIssue) $ do
+    let issueKey = fromJust workingOnIssue
+    lift $ inform [i|You are already working on #{key}.|]
+    ret ()
+  lift $ void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
+  lift $ run GitEnv (SetConfigItem WorkingOnIssue key)
+  lift $ inform [i|You are now working on #{key}.|]
   where
     onTransitionFailed _ =
       inform "State transition failed. It could be that the issue is already in development. In this case You can safely ignore this message."
