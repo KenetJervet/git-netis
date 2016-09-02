@@ -42,6 +42,7 @@ data IssueCommand = IssueListIssues { issueListAll      :: Bool
                                     , issueListToDoOnly :: Bool
                                     }
                   | IssueWorkon String
+                  | IssueDone
 
 
 ----------
@@ -140,6 +141,11 @@ issueParser = subparser
                        (helper <*> (IssueWorkon <$> issueWorkonParser))
                        (progDesc "Start working on an issue")
                      )
+    <>
+    command "done" ( info
+                     (helper <*> pure IssueDone)
+                     (progDesc "Mark an issue as done")
+                   )
   )
 
 issueListParser :: Parser IssueCommand
@@ -253,6 +259,8 @@ execIssueCommand cmd = case cmd of
     AJ.printIssues $ RJ.issues res
   IssueWorkon key ->
     workonIssue key
+  IssueDone ->
+    markDone
 
 main :: IO ()
 main = do

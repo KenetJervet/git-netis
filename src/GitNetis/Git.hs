@@ -14,6 +14,7 @@ import           Control.Monad.Catch
 import           Data.Either
 import           Data.Maybe
 import           Data.String.Interpolate
+import qualified Data.Text               as T
 import           System.Exit
 import           System.IO
 import           System.Process
@@ -28,11 +29,25 @@ exec args = readCreateProcessWithExitCode (proc gitExecutableName args)
 
 exec_ = flip exec mempty
 
-data Error = GitConfigError String
+data Error = GitConfigError GitConfigError
+           | CreateBranchError CreateBranchError
            | IDontCare
            deriving Show
 
 instance Exception Error
+
+
+data GitConfigError = GitConfigUnexpectedError String
+                    deriving Show
+
+instance Exception GitConfigError
+
+
+data CreateBranchError = BranchAlreadyExists String
+                       | CreateBranchUnexpectedError String
+                       deriving Show
+
+instance Exception CreateBranchError
 
 data GitEnv = GitEnv
 
@@ -112,27 +127,27 @@ instance Command (GetConfigItem item) where
     (exitCode, stdout, _) <- exec_ ["config", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return $ coerceFrom item (init stdout)  -- Remove trailing \n
-      ExitFailure _ -> throwM $ GitConfigError [i|Dunno what happened. Maybe key #{key item} was not found?|]
+      ExitFailure _ -> throwM $ GitConfigUnexpectedError [i|Dunno what happened. Maybe key #{key item} was not found?|]
 
 instance Command (SetConfigItem configItem) where
   run _ (SetConfigItem item value) = do
     (exitCode, _, _) <- exec_ ["config", gitConfigPrefix ++ key item, coerceTo item value]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigUnexpectedError "Really dunno what happened."
 
 instance Command (UnsetConfigItem configItem) where
   run _ (UnsetConfigItem item) = do
     (exitCode, _, _) <- exec_ ["config", "--unset", gitConfigPrefix ++ key item]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigUnexpectedError "Really dunno what happened."
 
 getMaybe :: ConfigItem item => item -> IO (Maybe (ValueType item))
 getMaybe item = do
   val <- run GitEnv (GetConfigItem item)
   return $ Just val
-  `catch` \(GitConfigError ex) -> return Nothing
+  `catchAll` \_ -> return Nothing
 
 getWithDefault :: ConfigItem item => item -> ValueType item -> IO (ValueType item)
 getWithDefault item def = fromMaybe def <$> getMaybe item
@@ -149,7 +164,8 @@ instance Command SwitchBranch where
     (exitCode, _, _) <- exec_ ["checkout", branchName]
     case exitCode of
       ExitSuccess   -> return ()
-      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+      ExitFailure _ -> throwM $ GitConfigUnexpectedError "Really dunno what happened."
+
 
 data CreateBranch = CreateBranch { name         :: String
                                  , startFrom    :: Maybe String
@@ -163,9 +179,21 @@ instance Command CreateBranch where
                                      ]
     case exitCode of
       ExitSuccess -> return ()
-      ExitFailure 128 -> throwM $ GitConfigError [i|Branch #{name}] already exists. |]
-      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
-    (exitCode, _, _) <- exec_ ["push", "--set-upstream", "origin", name]
+      ExitFailure 128 -> throwM $ BranchAlreadyExists name
+      ExitFailure _ -> throwM $ CreateBranchUnexpectedError "Really dunno what happened."
+    when createRemote $ do
+      (exitCode, _, _) <- exec_ ["push", "--set-upstream", "origin", name]
+      case exitCode of
+        ExitSuccess -> return ()
+        ExitFailure _ -> throwM $ CreateBranchUnexpectedError "Really dunno what happened."
+
+
+data CurrentBranch = CurrentBranch
+
+instance Command CurrentBranch where
+  type DataType CurrentBranch = String
+  run _ CurrentBranch = do
+    (exitCode, stdout, _) <- exec_ ["rev-parse", "--abbrev-ref", "HEAD"]
     case exitCode of
-      ExitSuccess -> return ()
-      ExitFailure _ -> throwM $ GitConfigError "Really dunno what happened."
+      ExitSuccess   -> return (T.unpack $ T.strip $ T.pack stdout)
+      ExitFailure _ -> throwM IDontCare

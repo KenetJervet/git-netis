@@ -8,6 +8,7 @@ module GitNetis.App.Util where
 
 import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Cont
 import           Data.ByteString.Lazy    (ByteString)
 import           Data.IORef
 import           Data.List
@@ -106,8 +107,8 @@ promptYesNo msg def = do
   val <- basePrompt [i|#{msg} [#{upY}/#{upN}]|] PlainText
   if val == "" then return def else toBool val
     where
-      upY = if def then 'Y' else 'y'
-      upN = if def then 'n' else 'N'
+      upY = if def then "Y" else "y"
+      upN = if def then "n" else "N"
       toBool val
         | val == "Y" || val == "y" = return True
         | val == "N" || val == "n" = return False
@@ -151,3 +152,7 @@ renderTableWithHighlightedItem items showFunc pred =
        zipWith (:) (map (printf "[%s]". show) [1..])
      prependHighlighter =
        zipWith $ (:) . (\obj -> if pred obj then ">" else "")
+
+-- A little helper to do early return
+withReturn :: ((r -> ContT r IO b) -> ContT r IO r) -> IO r
+withReturn = flip runContT return . callCC

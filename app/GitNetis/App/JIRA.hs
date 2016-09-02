@@ -7,7 +7,8 @@ module GitNetis.App.JIRA where
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Cont
-import           Data.ByteString.Lazy         (ByteString)
+import           Data.ByteString.Lazy    (ByteString)
+import           Data.Char
 import           Data.Maybe
 import           Data.String.Interpolate
 import           GitNetis.App.Env
@@ -79,9 +80,18 @@ printIssues issues = do
                             , issueSummary
                             ]
 
+branchNameForIssue :: Issue
+                   -> String
+branchNameForIssue Issue{..} = case issueType of
+  Story -> [i|feature/#{ik}|]
+  Task  -> [i|task/#{ik}|]
+  Bug   -> [i|bugfix/#{ik}|]
+  where
+    ik = map toLower issueKey
+
 workonIssue :: String  -- ^ issue key
              -> IO ()
-workonIssue key = flip runContT return $ callCC $ \ret -> do
+workonIssue key = withReturn $ \ret -> do
   issue <- lift $ getIssue key
   workingOnIssue <- lift $ getMaybe WorkingOnIssue
   when (isJust workingOnIssue) $ do
@@ -89,11 +99,27 @@ workonIssue key = flip runContT return $ callCC $ \ret -> do
     when (issueKey == key) $ do
       lift $ inform [i|You are already working on #{key}.|]
       ret ()
+  lift $ void (jiraRequest WorkonIssue { workonIssueKey = key })
+    `catchAll` onTransitionFailed
+  currentBranch <- lift $ run GitEnv CurrentBranch
+  let branchName = branchNameForIssue issue
+  answer <- lift $ promptYesNo [i|Creating a new branch #{branchName} from #{currentBranch}. Proceed?|] True
+  unless answer $ ret ()
   lift $ do
-    void (jiraRequest WorkonIssue { workonIssueKey = key }) `catchAll` onTransitionFailed
-    run GitEnv (SwitchBranch "GG")
+    run GitEnv CreateBranch{ name = branchNameForIssue issue
+                           , startFrom = Nothing
+                           , createRemote = True
+                           }
     run GitEnv (SetConfigItem WorkingOnIssue key)
     inform [i|You are now working on #{key}.|]
   where
     onTransitionFailed _ =
       inform "State transition failed. It could be that the issue is already in development. In this case you can safely ignore this message."
+
+markDone :: IO ()
+markDone = withReturn $ \ret -> do
+  workingOnIssue <- lift $ getMaybe WorkingOnIssue
+  unless (isJust workingOnIssue) $ do
+    lift $ inform "You are not working on any issue."
+    ret ()
+  lift $ run GitEnv (UnsetConfigItem WorkingOnIssue)
