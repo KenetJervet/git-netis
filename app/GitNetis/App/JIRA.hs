@@ -9,6 +9,7 @@ import           Control.Monad.Catch
 import           Control.Monad.Cont
 import           Data.ByteString.Lazy    (ByteString)
 import           Data.Char
+import           Data.List.Split
 import           Data.Maybe
 import           Data.String.Interpolate
 import           GitNetis.App.Env
@@ -67,6 +68,14 @@ printProjects projects = do
   where
     renderProject Project{..} = [projectKey, projectName]
 
+printIssue :: Issue -> IO ()
+printIssue Issue{..} = do
+  putStrLn $ renderTable [ ["Key:", issueKey]
+                         , ["Status:", issueStatus]
+                         , ["Assignee:", maybe "-- Not assigned --" id issueAssignee]
+                         , ["Summary:", issueSummary]
+                         ]
+
 printIssues :: [Issue] -> IO ()
 printIssues issues = do
   workingOnIssue <- getWithDefault WorkingOnIssue ""
@@ -88,6 +97,9 @@ branchNameForIssue Issue{..} = case issueType of
   Bug   -> [i|bugfix/#{ik}|]
   where
     ik = map toLower issueKey
+
+issueKeyForBranchName :: String -> String
+issueKeyForBranchName = last . splitOn "/"
 
 workonIssue :: String  -- ^ issue key
              -> IO ()

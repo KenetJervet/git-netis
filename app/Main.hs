@@ -41,6 +41,7 @@ data IssueCommand = IssueListIssues { issueListAll      :: Bool
                                     , issueListFreeOnly :: Bool
                                     , issueListToDoOnly :: Bool
                                     }
+                  | IssueShow (Maybe String)
                   | IssueWorkon String
                   | IssueDone
 
@@ -137,6 +138,11 @@ issueParser = subparser
                      (progDesc "List issues")
                    )
     <>
+    command "show" ( info
+                     (helper <*> issueShowParser)
+                     (progDesc "Show issue detail")
+                   )
+    <>
     command "workon" ( info
                        (helper <*> (IssueWorkon <$> issueWorkonParser))
                        (progDesc "Start working on an issue")
@@ -164,6 +170,15 @@ issueListParser = IssueListIssues
                <> help "Show only issues in the `To do` status"
              )
 
+issueShowParser :: Parser IssueCommand
+issueShowParser = IssueShow
+  <$> optional ( strArgument
+                 ( metavar "key"
+                   <>
+                   help "The key of the issue (optional)"
+                 )
+               )
+
 issueWorkonParser :: Parser String
 issueWorkonParser = strArgument
                     ( metavar "key"
@@ -189,6 +204,12 @@ exec cmd = do
 -- Exec Setup command
 ---------------------
 
+defaultJIRARoot :: String
+defaultJIRARoot = "http://jira.dev.netis.com.cn:8080/rest/api/2/"
+
+defaultBitbucketRoot :: String
+defaultBitbucketRoot = "https://git.dev.netis.com/rest/api/1.0/"
+
 execSetupCommand :: SetupCommand -> IO ()
 execSetupCommand cmd = case cmd of
   Setup{..} -> do
@@ -200,8 +221,8 @@ execSetupCommand cmd = case cmd of
     run GitEnv (SetConfigItem Password password)
     inform ""
     inform "Your username and password have been saved."
-    savedJiraRoot <- getWithDefault JIRARoot "http://jira.dev.netis.com.cn:8080/rest/api/2/"
-    savedBitbucketRoot <- getWithDefault BitbucketRoot "https://git.dev.netis.com/rest/api/1.0/"
+    savedJiraRoot <- getWithDefault JIRARoot defaultJIRARoot
+    savedBitbucketRoot <- getWithDefault BitbucketRoot defaultBitbucketRoot
     jiraRoot <- promptWithDefault "JIRA root URL" savedJiraRoot
     bitbucketRoot <- promptWithDefault "Bitbucket root URL" savedBitbucketRoot
     run GitEnv (SetConfigItem JIRARoot jiraRoot)
@@ -257,10 +278,19 @@ execIssueCommand cmd = case cmd of
                                           , getIssueListOnlyOpenSprints = True
                                           }
     AJ.printIssues $ RJ.issues res
-  IssueWorkon key ->
+  IssueShow Nothing -> do
+    currentBranch <- run GitEnv CurrentBranch
+    requestAndPrintIssue $ issueKeyForBranchName currentBranch
+  IssueShow (Just key) -> requestAndPrintIssue key
+  IssueWorkon key -> do
     workonIssue key
   IssueDone ->
     markDone
+  where
+    requestAndPrintIssue key = do
+      res <- jiraRequestJSON RJ.GetIssue{ getIssueKey = key
+                                        }
+      printIssue res
 
 main :: IO ()
 main = do

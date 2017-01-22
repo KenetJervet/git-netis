@@ -50,8 +50,8 @@ assembleJQL queries =
   where
     assembleKVP (k, v) =
       case v of
-        Nothing   -> printf "%s+is+empty" k
-        (Just jv) -> printf "%s=%s" k jv
+        Nothing -> printf "%s+is+empty" k
+        Just jv -> printf "%s=%s" k jv
 
 -------------
 -- Data decls
