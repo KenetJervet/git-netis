@@ -1,90 +1,140 @@
-name:                git-netis
-version:             0.1.0.0
-synopsis:            (Internal project!) Manage issues, branches and everything.
-description:         Please see README.md
-homepage:            https://git.dev.netis.com/users/kenneth.zhao/repos/git-netis
-license:             AllRightsReserved
-license-file:        LICENSE
-author:              Kenneth Zhao
-maintainer:          kenneth.zhao@netis.com.cn
-copyright:           2016 Kenneth Zhao
-category:            Development
-build-type:          Simple
--- extra-source-files:
-cabal-version:       >=1.10
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 2012c7efcf0d9e678617844636cdcbfeede2caf4461be1cc2a2511fabe503b77
 
-library
-  hs-source-dirs:      src
-  exposed-modules:     GitNetis.Git
-                     , GitNetis.Resource
-                     , GitNetis.Resource.Auth
-                     , GitNetis.Resource.Bitbucket
-                     , GitNetis.Resource.JIRA
-                     , GitNetis.Util
-  build-depends:       aeson >= 0.11
-                     , aeson-qq >= 0.8
-                     , base >= 4.7 && < 5
-                     , base64-bytestring >= 1.0
-                     , bytestring >= 0.10
-                     , exceptions >= 0.8
-                     , http-client >= 0.4
-                     , http-types >= 0.9
-                     , interpolate >= 0.1
-                     , lens >= 4.13
-                     , lens-aeson >= 1.0
-                     , mtl >= 2.2
-                     , network-uri >= 2.6
-                     , process >= 1.2
-                     , text >= 1.2
-                     , vector >= 0.11
-                     , unordered-containers >= 0.2
-                     , wreq >= 0.4
-  default-language:    Haskell2010
-
-executable git-netis
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  other-modules:       GitNetis.App
-                     , GitNetis.App.Bitbucket
-                     , GitNetis.App.Env
-                     , GitNetis.App.Internal
-                     , GitNetis.App.JIRA
-                     , GitNetis.App.Util
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , git-netis
-                     , boxes >= 0.1
-                     , bytestring >= 0.10
-                     , exceptions >= 0.8
-                     , interpolate >= 0.1
-                     , optparse-applicative >= 0.12
-                     , split
-                     , mtl >= 2.2
-                     , text >= 1.2
-  default-language:    Haskell2010
-
-test-suite git-netis-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  other-modules:       GitNetis.Test.Git
-                     , GitNetis.Test.Resource.JIRA
-                     , GitNetis.Test.Resource.Bitbucket
-                     , GitNetis.Test.TestConfig
-  build-depends:       aeson >= 0.11
-                     , base
-                     , git-netis
-                     , bytestring >= 0.10
-                     , exceptions >= 0.8
-                     , mtl >= 2.2
-                     , tasty >= 0.11
-                     , tasty-smallcheck
-                     , tasty-quickcheck
-                     , tasty-hunit
-                     , text >= 1.2
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+name:           git-netis
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/y-usuzumi/xshibana#readme>
+homepage:       https://github.com/y-usuzumi/git-netis#readme
+bug-reports:    https://github.com/y-usuzumi/git-netis/issues
+author:         Yukio Usuzumi
+maintainer:     anohigisavay@gmail.com
+copyright:      Copyright (c) 2018 Yukio Usuzumi
+license:        AllRightsReserved
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    README.md
 
 source-repository head
-  type:     git
-  location: https://kenneth.zhao@git.dev.netis.com/scm/~kenneth.zhao/git-netis.git
+  type: git
+  location: https://github.com/y-usuzumi/git-netis
+
+library
+  exposed-modules:
+      GitNetis.Git
+      GitNetis.Resource
+      GitNetis.Resource.Auth
+      GitNetis.Resource.Bitbucket
+      GitNetis.Resource.JIRA
+      GitNetis.Util
+  other-modules:
+      Paths_git_netis
+  hs-source-dirs:
+      src
+  default-extensions: DefaultSignatures DeriveAnyClass DisambiguateRecordFields FlexibleContexts FlexibleInstances FunctionalDependencies GADTs MultiParamTypeClasses MultiWayIf OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TypeFamilies UndecidableInstances
+  build-depends:
+      aeson >=0.11
+    , aeson-qq >=0.8
+    , base >=4.7 && <5
+    , base64-bytestring >=1.0
+    , bytestring >=0.10
+    , conduit
+    , exceptions >=0.8
+    , http-client >=0.4
+    , http-types >=0.9
+    , interpolate >=0.1
+    , lens >=4.13
+    , lens-aeson >=1.0
+    , mtl >=2.2
+    , network-uri >=2.6
+    , process >=1.2
+    , text >=1.2
+    , unordered-containers >=0.2
+    , vector >=0.11
+    , wreq >=0.4
+  default-language: Haskell2010
+
+executable git-netis
+  main-is: Main.hs
+  other-modules:
+      GitNetis.App
+      GitNetis.App.Bitbucket
+      GitNetis.App.Env
+      GitNetis.App.Git
+      GitNetis.App.Internal
+      GitNetis.App.JIRA
+      GitNetis.App.Util
+      Paths_git_netis
+  hs-source-dirs:
+      app
+  default-extensions: DefaultSignatures DeriveAnyClass DisambiguateRecordFields FlexibleContexts FlexibleInstances FunctionalDependencies GADTs MultiParamTypeClasses MultiWayIf OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TypeFamilies UndecidableInstances
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson >=0.11
+    , aeson-qq >=0.8
+    , base >=4.7 && <5
+    , base64-bytestring >=1.0
+    , boxes
+    , bytestring
+    , conduit
+    , exceptions
+    , git-netis
+    , http-client >=0.4
+    , http-types >=0.9
+    , interpolate
+    , lens >=4.13
+    , lens-aeson >=1.0
+    , mtl
+    , network-uri >=2.6
+    , optparse-applicative
+    , process >=1.2
+    , split
+    , text
+    , unordered-containers >=0.2
+    , vector >=0.11
+    , wreq >=0.4
+  default-language: Haskell2010
+
+test-suite git-netis-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      GitNetis.Test.Git
+      GitNetis.Test.Resource.Bitbucket
+      GitNetis.Test.Resource.JIRA
+      GitNetis.Test.TestConfig
+      Paths_git_netis
+  hs-source-dirs:
+      test
+  default-extensions: DefaultSignatures DeriveAnyClass DisambiguateRecordFields FlexibleContexts FlexibleInstances FunctionalDependencies GADTs MultiParamTypeClasses MultiWayIf OverloadedStrings QuasiQuotes RankNTypes RecordWildCards ScopedTypeVariables StandaloneDeriving TypeFamilies UndecidableInstances
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson >=0.11
+    , aeson-qq >=0.8
+    , base
+    , base64-bytestring >=1.0
+    , bytestring >=0.10
+    , conduit
+    , exceptions >=0.8
+    , git-netis
+    , http-client >=0.4
+    , http-types >=0.9
+    , interpolate >=0.1
+    , lens >=4.13
+    , lens-aeson >=1.0
+    , mtl >=2.2
+    , network-uri >=2.6
+    , process >=1.2
+    , tasty >=0.11
+    , tasty-hunit
+    , tasty-quickcheck
+    , tasty-smallcheck
+    , text >=1.2
+    , unordered-containers >=0.2
+    , vector >=0.11
+    , wreq >=0.4
+  default-language: Haskell2010

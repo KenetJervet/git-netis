@@ -1,17 +1,3 @@
-{-# LANGUAGE DefaultSignatures      #-}
-{-# LANGUAGE DeriveAnyClass         #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE OverloadedStrings      #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE RecordWildCards        #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE StandaloneDeriving     #-}
-
 module GitNetis.Resource ( RequestOptions (..)
                          , ResourceRequestError (..)
                          , Resource (..)
@@ -32,6 +18,7 @@ import           Data.Maybe
 import           GitNetis.Resource.Auth
 import           GitNetis.Util
 import qualified Network.HTTP.Client    as N
+import qualified Network.HTTP.Types.Status    as S
 import           Network.URI
 import           Network.Wreq           hiding (Payload)
 
@@ -85,7 +72,7 @@ class HttpMethod method => Resource method res | res -> method where
       -> IO String  -- ^ Relative uri
   payload :: res -> IO (HttpPayload method)
 
-  default payload :: res -> IO (HttpPayload HttpGet)
+  default payload :: (method ~ HttpGet) => res -> IO (HttpPayload method)
   payload _ = return $ HttpGetPayload ()
 
   get_ :: (Response ByteString -> IO (Response asType))
@@ -102,10 +89,10 @@ class HttpMethod method => Resource method res | res -> method where
     return $ r ^. responseBody
     `catch` handler
       where
-        handler e@(N.StatusCodeException s _ _) =
-          case s ^. statusCode of
-            sc | sc == 401 -> throwM AuthFailed
-               | sc == 404 -> throwM NotFound
+        handler e@(N.HttpExceptionRequest req (N.StatusCodeException resp _)) =
+          let s = N.responseStatus resp in
+            if | s == S.unauthorized401 -> throwM AuthFailed
+               | s == S.notFound404 -> throwM NotFound
                | otherwise -> throwM $ IDontCare e
         handler e = error (show e)
   get :: RequestOptions

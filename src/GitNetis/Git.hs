@@ -1,11 +1,3 @@
-{-# LANGUAGE DefaultSignatures        #-}
-{-# LANGUAGE DeriveAnyClass           #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
-{-# LANGUAGE GADTs                    #-}
-{-# LANGUAGE QuasiQuotes              #-}
-{-# LANGUAGE RecordWildCards          #-}
-{-# LANGUAGE TypeFamilies             #-}
-
 module GitNetis.Git where
 
 import           Control.Lens
@@ -69,10 +61,10 @@ class ConfigItem configItem where
   type ValueType configItem = String
   key :: configItem -> String
   coerceFrom :: configItem -> String -> ValueType configItem
-  default coerceFrom :: configItem -> String -> String
+  default coerceFrom :: (ValueType configItem ~ String) => configItem -> String -> ValueType configItem
   coerceFrom _ = id
   coerceTo :: configItem -> ValueType configItem -> String
-  default coerceTo :: configItem -> String -> String
+  default coerceTo :: (ValueType configItem ~ String) => configItem -> ValueType configItem -> String
   coerceTo _ = id
 
 data UserName = UserName

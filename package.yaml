@@ -1,0 +1,102 @@
+name:                git-netis
+version:             0.1.0.0
+github:              "y-usuzumi/git-netis"
+license:             AllRightsReserved
+author:              "Yukio Usuzumi"
+maintainer:          "anohigisavay@gmail.com"
+copyright:           "Copyright (c) 2018 Yukio Usuzumi"
+
+extra-source-files:
+- README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/y-usuzumi/xshibana#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- conduit
+- aeson >= 0.11
+- aeson-qq >= 0.8
+- base64-bytestring >= 1.0
+- bytestring >= 0.10
+- exceptions >= 0.8
+- http-client >= 0.4
+- http-types >= 0.9
+- interpolate >= 0.1
+- lens >= 4.13
+- lens-aeson >= 1.0
+- mtl >= 2.2
+- network-uri >= 2.6
+- process >= 1.2
+- text >= 1.2
+- vector >= 0.11
+- unordered-containers >= 0.2
+- wreq >= 0.4
+
+default-extensions:
+- DefaultSignatures
+- DeriveAnyClass
+- DisambiguateRecordFields
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- GADTs
+- MultiParamTypeClasses
+- MultiWayIf
+- OverloadedStrings
+- QuasiQuotes
+- RankNTypes
+- RecordWildCards
+- ScopedTypeVariables
+- StandaloneDeriving
+- TypeFamilies
+- UndecidableInstances
+
+library:
+  source-dirs: src
+
+executables:
+  git-netis:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - git-netis
+    - boxes
+    - bytestring
+    - exceptions
+    - interpolate
+    - optparse-applicative
+    - split
+    - mtl
+    - text
+
+tests:
+  git-netis-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - git-netis
+    - aeson >= 0.11
+    - base
+    - bytestring >= 0.10
+    - exceptions >= 0.8
+    - mtl >= 2.2
+    - tasty >= 0.11
+    - tasty-smallcheck
+    - tasty-quickcheck
+    - tasty-hunit
+    - text >= 1.2

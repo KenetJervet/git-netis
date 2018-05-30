@@ -1,8 +1,3 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TypeFamilies      #-}
-
 module GitNetis.Resource.Auth ( AuthOptions (..)
                               , NoAuth (..)
                               , BasicAuth (..)

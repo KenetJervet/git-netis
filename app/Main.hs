@@ -6,8 +6,10 @@
 
 module Main where
 
+import           Control.Applicative
 import           Control.Monad.Catch
 import           Data.Maybe
+import           Data.Monoid
 import           Data.String.Interpolate
 import qualified Data.Text                   as T
 import           GitNetis.App.Bitbucket      as AB
