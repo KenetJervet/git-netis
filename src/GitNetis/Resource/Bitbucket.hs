@@ -1,6 +1,7 @@
 module GitNetis.Resource.Bitbucket where
 
 import           Data.Aeson
+import           Data.Maybe
 import           GHC.Generics
 import           GitNetis.Resource
 import           Text.Printf
@@ -53,7 +54,7 @@ instance Resource HttpGet GetRepoList where
 instance FromJSON Project where
   parseJSON = withObject "project object" $ \obj -> do
     key <- obj .: "key"
-    description <- obj .: "description"
+    description <- fromMaybe "<No description>" <$> obj .:? "description"
     return Project{ projectKey = key, projectDescription = description }
 
 instance FromJSON ProjectList where

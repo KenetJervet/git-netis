@@ -207,10 +207,10 @@ exec cmd = do
 ---------------------
 
 defaultJIRARoot :: String
-defaultJIRARoot = "http://jira.dev.netis.com.cn:8080/rest/api/2/"
+defaultJIRARoot = "https://jira.netisdev.com/rest/api/2/"
 
 defaultBitbucketRoot :: String
-defaultBitbucketRoot = "https://git.dev.netis.com/rest/api/1.0/"
+defaultBitbucketRoot = "https://git.netisdev.com/rest/api/1.0/"
 
 execSetupCommand :: SetupCommand -> IO ()
 execSetupCommand cmd = case cmd of
