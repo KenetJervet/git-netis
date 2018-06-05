@@ -12,7 +12,7 @@ data Env = Env { username      :: String
 
 {-# NOINLINE globalEnv #-}
 globalEnv :: IORef Env
-globalEnv = unsafePerformIO $ newIORef Env{}
+globalEnv = unsafePerformIO $ newIORef undefined
 
 loadGlobalEnv :: IO Env
 loadGlobalEnv = do
