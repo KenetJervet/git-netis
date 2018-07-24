@@ -60,6 +60,7 @@ newtype ProjectList = ProjectList { projects :: [Project]
 data IssueType = Story
                | Task
                | Bug
+               | Support
                | Other String
                deriving (Eq, Show)
 
@@ -71,6 +72,8 @@ instance Read IssueType where
           (string "Task" >> return Task)
           <++
           (string "Bug" >> return Bug)
+          <++
+          (string "Support" >> return Support)
           <++
           (Other <$> munch (const True))
 
