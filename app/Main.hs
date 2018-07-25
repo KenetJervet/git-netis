@@ -285,6 +285,7 @@ execIssueCommand cmd = case cmd of
     requestAndPrintIssue $ issueKeyForBranchName currentBranch
   IssueShow (Just key) -> requestAndPrintIssue key
   IssueWorkon key -> do
+    requestAndPrintIssue key
     workonIssue key
   IssueDone ->
     markDone
