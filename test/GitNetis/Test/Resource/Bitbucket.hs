@@ -12,7 +12,7 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 netisBitbucketRoot :: String
-netisBitbucketRoot = "https://git.dev.netis.com/rest/api/1.0/"
+netisBitbucketRoot = "https://git.netisdev.com/rest/api/1.0/"
 
 authFailedRequestOptions :: RequestOptions
 authFailedRequestOptions = let

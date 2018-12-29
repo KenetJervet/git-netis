@@ -17,7 +17,7 @@ import           Test.Tasty
 import           Test.Tasty.HUnit
 
 netisJIRARoot :: String
-netisJIRARoot = "http://jira.dev.netis.com.cn:8080/rest/api/2/"
+netisJIRARoot = "http://jira.netisdev.com/rest/api/2/"
 
 authFailedRequestOptions :: RequestOptions
 authFailedRequestOptions = let
