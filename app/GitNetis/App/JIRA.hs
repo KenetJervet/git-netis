@@ -69,11 +69,11 @@ printProjects projects = do
     renderProject Project{..} = [projectKey, projectName]
 
 printIssue :: Issue -> IO ()
-printIssue Issue{..} = do
+printIssue Issue{..} =
   putStrLn $ renderTable [ ["Key:", issueKey]
-                         , ["Type:", show issueType]
+                         , ["Type:", renderIssueType issueType]
                          , ["Status:", issueStatus]
-                         , ["Assignee:", maybe "-- Not assigned --" id issueAssignee]
+                         , ["Assignee:", fromMaybe "-- Not assigned --" issueAssignee]
                          , ["Summary:", issueSummary]
                          ]
 
@@ -85,7 +85,7 @@ printIssues issues = do
     (== workingOnIssue) . issueKey
   where
     renderIssue Issue{..} = [ issueKey
-                            , show issueType
+                            , renderIssueType issueType
                             , issueStatus
                             , fromMaybe "" issueAssignee
                             , issueSummary

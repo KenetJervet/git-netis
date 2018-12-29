@@ -18,7 +18,7 @@ lookupE :: Value -> Text -> Either String Value
 lookupE (Object obj) key = case H.lookup key obj of
         Nothing -> Left $ "key " ++ show key ++ " not present"
         Just v  -> Right v
-loopkupE _ _             = Left $ "not an object"
+loopkupE _ _             = Left "not an object"
 
 (.:*) :: (FromJSON a) => Value -> [Text] -> Parser a
 (.:*) value = parseJSON <=< foldM ((either fail return .) . lookupE) value

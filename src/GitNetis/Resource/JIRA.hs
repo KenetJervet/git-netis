@@ -77,6 +77,14 @@ instance Read IssueType where
           <++
           (Other <$> munch (const True))
 
+renderIssueType :: IssueType -> String
+renderIssueType s = case s of
+  Story -> "Story"
+  Task -> "Task"
+  Bug -> "Bug"
+  Support -> "Support"
+  Other s -> s
+
 data Issue = Issue { issueKey      :: String
                    , issueSummary  :: String
                    , issueAssignee :: Maybe String
